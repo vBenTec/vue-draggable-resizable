@@ -4,26 +4,28 @@ import { computed } from 'vue'
 import { provideContainer } from '../composables/useContainer'
 import type { DraggableContainerProps } from '../types'
 
-const props = withDefaults(defineProps<DraggableContainerProps>(), {
-  adsorbParent: true,
-  referenceLineVisible: true,
-  adsorbCols: () => [],
-  adsorbRows: () => [],
-})
+const {
+  disabled,
+  adsorbParent = true,
+  adsorbCols = [],
+  adsorbRows = [],
+  referenceLineVisible = true,
+  referenceLineColor,
+} = defineProps<DraggableContainerProps>()
 
 defineSlots<{
   default?: () => unknown
 }>()
 
 const { matchedLines } = provideContainer(() => ({
-  disabled: props.disabled,
-  adsorbParent: props.adsorbParent,
-  adsorbCols: props.adsorbCols,
-  adsorbRows: props.adsorbRows,
+  disabled,
+  adsorbParent,
+  adsorbCols,
+  adsorbRows,
 }))
 
 const style = computed(() =>
-  props.referenceLineColor ? { '--vdr-reference-line-color': props.referenceLineColor } : undefined,
+  referenceLineColor ? { '--vdr-reference-line-color': referenceLineColor } : undefined,
 )
 </script>
 

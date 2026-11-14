@@ -9,19 +9,27 @@ import { useParentSize } from '../composables/useParentSize'
 import { useResize } from '../composables/useResize'
 import type { DraggableResizableEmits, DraggableResizableProps } from '../types'
 
-const props = withDefaults(defineProps<DraggableResizableProps>(), {
-  draggable: true,
-  resizable: true,
-  minW: 20,
-  minH: 20,
-  handles: () => [...ALL_HANDLES],
-  classNameDraggable: 'vdr-draggable',
-  classNameResizable: 'vdr-resizable',
-  classNameDragging: 'vdr-dragging',
-  classNameResizing: 'vdr-resizing',
-  classNameActive: 'vdr-active',
-  classNameHandle: 'vdr-handle',
-})
+const {
+  draggable = true,
+  resizable = true,
+  disabledX,
+  disabledY,
+  disabledW,
+  disabledH,
+  minW = 20,
+  minH = 20,
+  maxW,
+  maxH,
+  parent,
+  handles = ALL_HANDLES,
+  lockAspectRatio,
+  classNameDraggable = 'vdr-draggable',
+  classNameResizable = 'vdr-resizable',
+  classNameDragging = 'vdr-dragging',
+  classNameResizing = 'vdr-resizing',
+  classNameActive = 'vdr-active',
+  classNameHandle = 'vdr-handle',
+} = defineProps<DraggableResizableProps>()
 
 const emit = defineEmits<DraggableResizableEmits>()
 
@@ -49,22 +57,22 @@ const resizingHandle = ref<ResizeHandle | null>(null)
 const resizing = computed(() => resizingHandle.value !== null)
 
 const constraints = computed<ConstraintOptions>(() => ({
-  disabledX: props.disabledX,
-  disabledY: props.disabledY,
-  disabledW: props.disabledW,
-  disabledH: props.disabledH,
-  minW: props.minW,
-  minH: props.minH,
-  maxW: props.maxW,
-  maxH: props.maxH,
-  parent: props.parent,
-  lockAspectRatio: props.lockAspectRatio,
+  disabledX,
+  disabledY,
+  disabledW,
+  disabledH,
+  minW,
+  minH,
+  maxW,
+  maxH,
+  parent,
+  lockAspectRatio,
 }))
 
 // The parent's size is needed for `parent` bounds and for snapping to the parent's edges.
 const { parentSize, refresh: refreshParentSize } = useParentSize(
   root,
-  () => props.parent || container !== null,
+  () => parent || container !== null,
 )
 
 const drag = useDrag({
@@ -74,7 +82,7 @@ const drag = useDrag({
   w,
   h,
   dragging,
-  enabled: () => props.draggable,
+  enabled: () => draggable,
   constraints,
   parentSize,
   container,
@@ -87,7 +95,7 @@ const resize = useResize({
   w,
   h,
   resizingHandle,
-  enabled: () => props.resizable,
+  enabled: () => resizable,
   constraints,
   parentSize,
   emit,
@@ -129,7 +137,7 @@ if (container) {
   onBeforeUnmount(() => container.removePosition(id))
 }
 
-const visibleHandles = computed(() => (props.resizable ? filterHandles(props.handles) : []))
+const visibleHandles = computed(() => (resizable ? filterHandles(handles) : []))
 
 const style = computed(() => ({
   left: `${x.value}px`,
@@ -137,23 +145,23 @@ const style = computed(() => ({
   width: `${w.value}px`,
   height: `${h.value}px`,
   // Without this the browser claims touch gestures for scrolling and cancels the pointer.
-  touchAction: props.draggable || props.resizable ? 'none' : undefined,
+  touchAction: draggable || resizable ? 'none' : undefined,
 }))
 
 const stateClasses = computed(() => ({
-  [props.classNameDraggable]: props.draggable,
-  [props.classNameResizable]: props.resizable,
-  [props.classNameDragging]: dragging.value,
-  [props.classNameResizing]: resizing.value,
-  [props.classNameActive]: active.value,
+  [classNameDraggable]: draggable,
+  [classNameResizable]: resizable,
+  [classNameDragging]: dragging.value,
+  [classNameResizing]: resizing.value,
+  [classNameActive]: active.value,
 }))
 
 const handleClasses = (handle: ResizeHandle) => [
   ...new Set([
     'vdr-handle',
     `vdr-handle-${handle}`,
-    props.classNameHandle,
-    `${props.classNameHandle}-${handle}`,
+    classNameHandle,
+    `${classNameHandle}-${handle}`,
   ]),
 ]
 </script>
