@@ -136,6 +136,8 @@ describe('dragging', () => {
     expect(wrapper.emitted('drag-end')).toEqual([[{ x: 130, y: 90 }]])
     expect(wrapper.emitted('update:x')?.at(-1)).toEqual([130])
     expect(wrapper.emitted('update:y')?.at(-1)).toEqual([90])
+    expect(wrapper.emitted('update:w')).toBeUndefined()
+    expect(wrapper.emitted('update:h')).toBeUndefined()
   })
 
   it('ignores other pointers and non-primary buttons', async () => {
@@ -282,6 +284,19 @@ describe('resizing', () => {
     await wrapper.setProps({ lockAspectRatio: true })
     await dragBy(handle(wrapper, 'mr'), 120, 0)
     expect(rectOf(wrapper.element)).toMatchObject({ w: 240, h: 100 })
+  })
+
+  it('starts no drag while resizing, even with a second pointer', async () => {
+    const wrapper = mountElement({ active: true })
+
+    pointer(handle(wrapper, 'br'), 'pointerdown', 0, 0)
+    pointer(wrapper.element, 'pointerdown', 0, 0, { pointerId: 2 })
+    pointer(document, 'pointermove', 10, 20)
+    await nextTick()
+
+    expect(wrapper.emitted('drag-start')).toBeUndefined()
+    expect(wrapper.attributes('data-resizing')).toBe('br')
+    expect(rectOf(wrapper.element)).toEqual({ x: 100, y: 100, w: 110, h: 70 })
   })
 
   it('does nothing when resizable is turned off mid-flight', async () => {

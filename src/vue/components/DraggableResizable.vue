@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, useId, useTemplateRef, watch } from 'vue'
 
 import { ALL_HANDLES, filterHandles } from '../../core/handles'
-import type { ConstraintOptions, ResizeHandle } from '../../core/types'
+import type { ConstraintOptions, Rect, ResizeHandle } from '../../core/types'
 import { useContainer } from '../composables/useContainer'
-import { useDrag } from '../composables/useDrag'
-import { useParentSize } from '../composables/useParentSize'
-import { useResize } from '../composables/useResize'
+import { useGesture } from '../composables/useGesture'
 import type { DraggableResizableEmits, DraggableResizableProps } from '../types'
 
 const {
@@ -48,13 +46,20 @@ const h = defineModel<number>('h', {
 })
 const active = defineModel<boolean>('active', { default: false })
 
+// The four models as one value. Writing it only emits updates for the models that changed.
+const rect = computed<Rect>({
+  get: () => ({ x: x.value, y: y.value, w: w.value, h: h.value }),
+  set: (next) => {
+    x.value = next.x
+    y.value = next.y
+    w.value = next.w
+    h.value = next.h
+  },
+})
+
 const id = useId()
 const root = useTemplateRef<HTMLDivElement>('root')
 const container = useContainer()
-
-const dragging = ref(false)
-const resizingHandle = ref<ResizeHandle | null>(null)
-const resizing = computed(() => resizingHandle.value !== null)
 
 const constraints = computed<ConstraintOptions>(() => ({
   disabledX,
@@ -69,49 +74,25 @@ const constraints = computed<ConstraintOptions>(() => ({
   lockAspectRatio,
 }))
 
-// The parent's size is needed for `parent` bounds and for snapping to the parent's edges.
-const { parentSize, refresh: refreshParentSize } = useParentSize(
-  root,
-  () => parent || container !== null,
-)
-
-const drag = useDrag({
+const { gesture, startDrag, startResize } = useGesture({
   id,
-  x,
-  y,
-  w,
-  h,
-  dragging,
-  enabled: () => draggable,
+  root,
+  rect,
   constraints,
-  parentSize,
+  draggable: () => draggable,
+  resizable: () => resizable,
   container,
   emit,
 })
 
-const resize = useResize({
-  x,
-  y,
-  w,
-  h,
-  resizingHandle,
-  enabled: () => resizable,
-  constraints,
-  parentSize,
-  emit,
-})
+const dragging = computed(() => gesture.value?.kind === 'drag')
+const resizingHandle = computed(() =>
+  gesture.value?.kind === 'resize' ? gesture.value.handle : null,
+)
 
 const onPointerDown = (event: PointerEvent) => {
   active.value = true
-  if (resizing.value) return
-  refreshParentSize()
-  drag.onPointerDown(event)
-}
-
-const onHandlePointerDown = (event: PointerEvent, handle: ResizeHandle) => {
-  if (dragging.value) return
-  refreshParentSize()
-  resize.onPointerDown(event, handle)
+  startDrag(event)
 }
 
 const onOutsidePointerDown = (event: PointerEvent) => {
@@ -129,11 +110,10 @@ onMounted(() => document.addEventListener('pointerdown', onOutsidePointerDown))
 onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutsidePointerDown))
 
 if (container) {
-  const syncPosition = () =>
-    container.updatePosition(id, { x: x.value, y: y.value, w: w.value, h: h.value })
+  const syncPosition = () => container.updatePosition(id, rect.value)
 
   onMounted(syncPosition)
-  watch([x, y, w, h], syncPosition)
+  watch(rect, syncPosition)
   onBeforeUnmount(() => container.removePosition(id))
 }
 
@@ -152,7 +132,7 @@ const stateClasses = computed(() => ({
   [classNameDraggable]: draggable,
   [classNameResizable]: resizable,
   [classNameDragging]: dragging.value,
-  [classNameResizing]: resizing.value,
+  [classNameResizing]: resizingHandle.value !== null,
   [classNameActive]: active.value,
 }))
 
@@ -186,7 +166,7 @@ const handleClasses = (handle: ResizeHandle) => [
       :key="handle"
       :class="handleClasses(handle)"
       :data-handle="handle"
-      @pointerdown.stop="onHandlePointerDown($event, handle)"
+      @pointerdown.stop="startResize($event, handle)"
     />
   </div>
 </template>
