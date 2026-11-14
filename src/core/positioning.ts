@@ -1,4 +1,5 @@
-import type { ConstraintOptions, Rect, ResizeHandle, Size, SizeLimits } from './types'
+import { getMatchedGuides, snapToGuides } from './guides'
+import type { ConstraintOptions, Guides, Point, Rect, ResizeHandle, Size } from './types'
 
 type VerticalEdge = 't' | 'b' | null
 type HorizontalEdge = 'l' | 'r' | null
@@ -28,17 +29,28 @@ const HORIZONTAL_EDGES: Partial<Record<string, HorizontalEdge>> = { l: 'l', r: '
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max))
 
-/**
- * Limits for a rect of the given size: min/max size from the options and, with `parent`, the
- * range of positions that keep it inside the parent.
- */
-export const calculateSizeLimits = (
-  options: ConstraintOptions,
-  parentSize: Size | null,
-  currentWidth: number,
-  currentHeight: number,
-): SizeLimits => {
-  const bounds = options.parent ? parentSize : null
+interface SizeLimits {
+  minWidth: number
+  minHeight: number
+  maxWidth: number
+  maxHeight: number
+}
+
+/** Range of positions a rect may take while dragging. */
+interface PositionBounds {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+}
+
+/** The parent to stay inside of, or `null` if the rect may leave it (or its size is unknown). */
+const getBounds = (options: ConstraintOptions, parentSize: Size | null) =>
+  options.parent ? parentSize : null
+
+/** Min / max size from the options; with `parent`, the size is also capped at the parent's. */
+const getSizeLimits = (options: ConstraintOptions, parentSize: Size | null): SizeLimits => {
+  const bounds = getBounds(options, parentSize)
   const maxW = options.maxW ?? Infinity
   const maxH = options.maxH ?? Infinity
 
@@ -47,36 +59,70 @@ export const calculateSizeLimits = (
     minHeight: options.minH ?? 0,
     maxWidth: bounds ? Math.min(bounds.width, maxW) : maxW,
     maxHeight: bounds ? Math.min(bounds.height, maxH) : maxH,
-    minLeft: bounds ? 0 : -Infinity,
-    minTop: bounds ? 0 : -Infinity,
-    maxLeft: bounds ? bounds.width - currentWidth : Infinity,
-    maxTop: bounds ? bounds.height - currentHeight : Infinity,
   }
 }
 
-/** Clamps a rect to the limits. Disabled axes are returned untouched. */
-export const constrainPosition = (
-  rect: Rect,
-  limits: SizeLimits,
+/** With `parent`, the positions that keep a rect of the given size inside the parent. */
+const getPositionBounds = (
   options: ConstraintOptions,
-): Rect => ({
-  x: options.disabledX ? rect.x : clamp(rect.x, limits.minLeft, limits.maxLeft),
-  y: options.disabledY ? rect.y : clamp(rect.y, limits.minTop, limits.maxTop),
-  w: options.disabledW ? rect.w : clamp(rect.w, limits.minWidth, limits.maxWidth),
-  h: options.disabledH ? rect.h : clamp(rect.h, limits.minHeight, limits.maxHeight),
-})
+  parentSize: Size | null,
+  { w, h }: Rect,
+): PositionBounds => {
+  const bounds = getBounds(options, parentSize)
 
-/** Moves a rect by a pointer delta, honouring `disabledX` / `disabledY`. */
-export const moveRect = (
-  start: Rect,
-  deltaX: number,
-  deltaY: number,
-  options: ConstraintOptions,
-): Rect => ({
-  ...start,
-  x: options.disabledX ? start.x : start.x + deltaX,
-  y: options.disabledY ? start.y : start.y + deltaY,
-})
+  return bounds
+    ? { minX: 0, minY: 0, maxX: bounds.width - w, maxY: bounds.height - h }
+    : { minX: -Infinity, minY: -Infinity, maxX: Infinity, maxY: Infinity }
+}
+
+export interface DragInput {
+  /** Rect at the moment the drag started. */
+  start: Rect
+  /** Pointer movement since the drag started. */
+  deltaX: number
+  deltaY: number
+  options: ConstraintOptions
+  /** Size of the parent, required for `options.parent`. */
+  parentSize: Size | null
+  /** Guides to snap to, `null` to not snap. */
+  guides: Guides | null
+}
+
+export interface DragResult extends Point {
+  /** Guides the element is aligned with at the new position, `null` without guides. */
+  matchedGuides: Guides | null
+}
+
+/**
+ * The position that results from dragging `start` by the given pointer delta: moved, kept inside
+ * the parent, snapped to the closest guides and kept inside the parent again, so snapping never
+ * pushes the element out. The size does not change while dragging. Disabled axes stay put.
+ */
+export const dragRect = ({
+  start,
+  deltaX,
+  deltaY,
+  options,
+  parentSize,
+  guides,
+}: DragInput): DragResult => {
+  const bounds = getPositionBounds(options, parentSize, start)
+  const keepInBounds = ({ x, y }: Point): Point => ({
+    x: options.disabledX ? x : clamp(x, bounds.minX, bounds.maxX),
+    y: options.disabledY ? y : clamp(y, bounds.minY, bounds.maxY),
+  })
+
+  const moved = keepInBounds({
+    x: options.disabledX ? start.x : start.x + deltaX,
+    y: options.disabledY ? start.y : start.y + deltaY,
+  })
+  if (!guides) return { ...moved, matchedGuides: null }
+
+  const snapped = keepInBounds(
+    snapToGuides({ ...start, ...moved }, guides, { x: !options.disabledX, y: !options.disabledY }),
+  )
+  return { ...snapped, matchedGuides: getMatchedGuides({ ...start, ...snapped }, guides) }
+}
 
 /** The aspect ratio (h / w) to preserve, or `null` if it cannot or should not be preserved. */
 const getLockedAspectRatio = (start: Rect, options: ConstraintOptions): number | null => {
@@ -125,8 +171,7 @@ const calculateResizeLimits = (
   parentSize: Size | null,
   aspectRatio: number | null,
 ) => {
-  const limits = calculateSizeLimits(options, parentSize, start.w, start.h)
-  let { minWidth, minHeight, maxWidth, maxHeight } = limits
+  let { minWidth, minHeight, maxWidth, maxHeight } = getSizeLimits(options, parentSize)
 
   if (options.parent && parentSize) {
     const roomX = edges.horizontal === 'l' ? start.x + start.w : parentSize.width - start.x

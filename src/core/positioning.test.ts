@@ -1,84 +1,111 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  calculateSizeLimits,
-  constrainPosition,
+  dragRect,
   getResizeEdges,
-  moveRect,
   resizeRect,
+  type DragInput,
   type ResizeInput,
 } from './positioning'
-import type { Rect } from './types'
+import type { Guides, Rect } from './types'
 
 const parentSize = { width: 300, height: 200 }
 const start: Rect = { x: 100, y: 50, w: 100, h: 50 }
 
+const drag = (input: Partial<DragInput>) =>
+  dragRect({ start, deltaX: 0, deltaY: 0, options: {}, parentSize: null, guides: null, ...input })
+
 const resize = (input: Partial<ResizeInput> & Pick<ResizeInput, 'handle'>) =>
   resizeRect({ start, deltaX: 0, deltaY: 0, options: {}, parentSize: null, ...input })
 
-describe('calculateSizeLimits', () => {
-  it('is unbounded without parent and max sizes', () => {
-    expect(calculateSizeLimits({}, parentSize, 100, 50)).toEqual({
-      minWidth: 0,
-      minHeight: 0,
-      maxWidth: Infinity,
-      maxHeight: Infinity,
-      minLeft: -Infinity,
-      minTop: -Infinity,
-      maxLeft: Infinity,
-      maxTop: Infinity,
+describe('dragRect', () => {
+  // Vertical guides at 0 / 150 / 300, horizontal ones at 0 / 100 / 200.
+  const guides: Guides = { x: [0, 150, 300], y: [0, 100, 200] }
+
+  it.each([
+    ['moves by the delta', { deltaX: 10, deltaY: -20 }, { x: 110, y: 30 }],
+    [
+      'ignores disabledX',
+      { deltaX: 10, deltaY: -20, options: { disabledX: true } },
+      { x: 100, y: 30 },
+    ],
+    [
+      'ignores disabledY',
+      { deltaX: 10, deltaY: -20, options: { disabledY: true } },
+      { x: 110, y: 50 },
+    ],
+    ['is unbounded without parent', { deltaX: -500, deltaY: 500, parentSize }, { x: -400, y: 550 }],
+    [
+      'stays inside the parent',
+      { deltaX: -500, deltaY: 500, options: { parent: true }, parentSize },
+      { x: 0, y: 150 },
+    ],
+    [
+      'stays inside the parent on the far side',
+      { deltaX: 500, deltaY: -500, options: { parent: true }, parentSize },
+      { x: 200, y: 0 },
+    ],
+    [
+      'pins an element larger than the parent to its top left corner',
+      {
+        start: { x: 0, y: 0, w: 400, h: 300 },
+        deltaX: 30,
+        deltaY: 30,
+        options: { parent: true },
+        parentSize,
+      },
+      { x: 0, y: 0 },
+    ],
+    [
+      'ignores the parent while its size is unknown',
+      { deltaX: 500, deltaY: 500, options: { parent: true } },
+      { x: 600, y: 550 },
+    ],
+    [
+      'does not clamp a disabled axis',
+      {
+        start: { x: -10, y: 50, w: 100, h: 50 },
+        options: { parent: true, disabledX: true },
+        parentSize,
+      },
+      { x: -10, y: 50 },
+    ],
+  ] satisfies [string, Partial<DragInput>, { x: number; y: number }][])(
+    '%s',
+    (_, input, expected) => {
+      expect(drag(input)).toEqual({ ...expected, matchedGuides: null })
+    },
+  )
+
+  it('snaps the closest line of the rect to a guide and reports the matched guides', () => {
+    // Moved to 103 / 97: the centre line 153 snaps to 150, the top edge 97 to 100.
+    expect(drag({ deltaX: 3, deltaY: 47, guides })).toEqual({
+      x: 100,
+      y: 100,
+      matchedGuides: { x: [150], y: [100] },
     })
   })
 
-  it('uses min / max sizes from the options', () => {
-    const limits = calculateSizeLimits({ minW: 10, minH: 20, maxW: 30, maxH: 40 }, null, 0, 0)
-    expect(limits).toMatchObject({ minWidth: 10, minHeight: 20, maxWidth: 30, maxHeight: 40 })
-  })
-
-  it('keeps the rect inside the parent', () => {
-    const limits = calculateSizeLimits({ parent: true, maxW: 500 }, parentSize, 100, 50)
-    expect(limits).toMatchObject({
-      maxWidth: 300,
-      maxHeight: 200,
-      minLeft: 0,
-      minTop: 0,
-      maxLeft: 200,
-      maxTop: 150,
+  it('reports no matched guides when nothing is aligned', () => {
+    expect(drag({ deltaX: 20, deltaY: 10, guides })).toEqual({
+      x: 120,
+      y: 60,
+      matchedGuides: { x: [], y: [] },
     })
   })
 
-  it('ignores the parent while its size is unknown', () => {
-    expect(calculateSizeLimits({ parent: true }, null, 100, 50).maxLeft).toBe(Infinity)
-  })
-})
-
-describe('constrainPosition', () => {
-  const limits = calculateSizeLimits({ parent: true, minW: 20, minH: 20 }, parentSize, 100, 50)
-
-  it('clamps position and size', () => {
-    expect(constrainPosition({ x: -10, y: 500, w: 5, h: 999 }, limits, {})).toEqual({
-      x: 0,
-      y: 150,
-      w: 20,
-      h: 200,
-    })
+  it('does not snap disabled axes', () => {
+    // The centre line 153 would snap to 150 and move the element to 100.
+    const shifted = { ...start, x: 103 }
+    const options = { disabledX: true }
+    expect(drag({ start: shifted, deltaY: 47, guides, options })).toMatchObject({ x: 103, y: 100 })
   })
 
-  it('leaves disabled axes untouched', () => {
-    const options = { disabledX: true, disabledY: true, disabledW: true, disabledH: true }
-    const rect = { x: -10, y: 500, w: 5, h: 999 }
-    expect(constrainPosition(rect, limits, options)).toEqual(rect)
-  })
-})
-
-describe('moveRect', () => {
-  it('moves by the delta', () => {
-    expect(moveRect(start, 10, -20, {})).toEqual({ x: 110, y: 30, w: 100, h: 50 })
-  })
-
-  it('honours disabled axes', () => {
-    expect(moveRect(start, 10, -20, { disabledX: true })).toMatchObject({ x: 100, y: 30 })
-    expect(moveRect(start, 10, -20, { disabledY: true })).toMatchObject({ x: 110, y: 50 })
+  it('never snaps out of the parent', () => {
+    const outside: Guides = { x: [-3, 303], y: [] }
+    const options = { parent: true }
+    expect(drag({ deltaX: -99, options, parentSize, guides: outside })).toMatchObject({ x: 0 })
+    expect(drag({ deltaX: 99, options, parentSize, guides: outside })).toMatchObject({ x: 200 })
   })
 })
 

@@ -1,8 +1,7 @@
 import { onScopeDispose, type Ref, type ShallowRef } from 'vue'
 
-import { getMatchedGuides, snapToGuides } from '../../core/guides'
 import { isPrimaryPointer, trackPointer } from '../../core/pointer'
-import { calculateSizeLimits, constrainPosition, moveRect } from '../../core/positioning'
+import { dragRect } from '../../core/positioning'
 import type { ConstraintOptions, Rect, Size } from '../../core/types'
 import type { ContainerContext, DraggableResizableEmit } from '../types'
 
@@ -38,38 +37,24 @@ export const useDrag = ({
   const onPointerDown = (event: PointerEvent) => {
     if (!enabled() || !isPrimaryPointer(event) || stopTracking) return
 
-    const startX = x.value
-    const startY = y.value
+    const start: Rect = { x: x.value, y: y.value, w: w.value, h: h.value }
     const guides = container?.getGuides(id, parentSize.value) ?? null
 
     dragging.value = true
-    emit('drag-start', { x: startX, y: startY })
+    emit('drag-start', { x: start.x, y: start.y })
 
     stopTracking = trackPointer(event, {
       onMove: (deltaX, deltaY) => {
-        const options = constraints.value
-        const start: Rect = { x: startX, y: startY, w: w.value, h: h.value }
-        const limits = calculateSizeLimits(options, parentSize.value, start.w, start.h)
+        const next = dragRect({
+          start,
+          deltaX,
+          deltaY,
+          options: constraints.value,
+          parentSize: parentSize.value,
+          guides,
+        })
 
-        // Clamps the position only; the size does not change while dragging.
-        const keepInBounds = (rect: Rect): Rect => {
-          const bounded = constrainPosition(rect, limits, options)
-          return { ...start, x: bounded.x, y: bounded.y }
-        }
-
-        const moved = keepInBounds(moveRect(start, deltaX, deltaY, options))
-        // Snapping must never push the element out of its bounds.
-        const next = guides
-          ? keepInBounds({
-              ...start,
-              ...snapToGuides(moved, guides, {
-                x: !options.disabledX,
-                y: !options.disabledY,
-              }),
-            })
-          : moved
-
-        if (guides) container?.setMatchedGuides(getMatchedGuides(next, guides))
+        if (next.matchedGuides) container?.setMatchedGuides(next.matchedGuides)
 
         x.value = next.x
         y.value = next.y

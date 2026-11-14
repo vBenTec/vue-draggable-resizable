@@ -32,17 +32,6 @@ export interface ConstraintOptions {
   lockAspectRatio?: boolean
 }
 
-export interface SizeLimits {
-  minWidth: number
-  minHeight: number
-  maxWidth: number
-  maxHeight: number
-  minLeft: number
-  minTop: number
-  maxLeft: number
-  maxTop: number
-}
-
 export interface SnapOptions {
   disabled?: boolean
   /** Snap to the edges and the centre of the parent. */
