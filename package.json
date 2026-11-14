@@ -48,30 +48,40 @@
     "test:watch": "vitest",
     "build": "vite build && rolldown -c rolldown.dts.config.ts",
     "check:pkg": "publint && attw --pack --profile esm-only --exclude-entrypoints style.css",
-    "prepublishOnly": "pnpm build && pnpm check:pkg"
+    "prepublishOnly": "pnpm build && pnpm check:pkg",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
-    "@types/node": "^24.0.4",
+    "@types/node": "^24.19.2",
     "@vitejs/plugin-vue": "^6.0.11",
     "@vue/test-utils": "^2.5.1",
     "happy-dom": "^21.0.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
     "oxfmt": "^0.78.0",
     "oxlint": "^1.93.0",
     "publint": "^0.3.25",
-    "rolldown": "^1.2.19",
+    "rolldown": "^1.3.2",
     "rolldown-plugin-dts": "^0.30.2",
-    "typescript": "~5.8.3",
+    "typescript": "~6.0.3",
     "vite": "^8.3.8",
     "vitest": "^5.1.0",
-    "vue": "^3.5.17",
+    "vue": "^3.5.45",
     "vue-tsc": "^3.3.14"
   },
   "peerDependencies": {
     "vue": "^3.5.0"
   },
+  "lint-staged": {
+    "*.{js,ts,vue,mjs,cjs}": [
+      "oxlint --fix",
+      "oxfmt --no-error-on-unmatched-pattern"
+    ],
+    "*.{json,md,css,yml,yaml,html}": "oxfmt --no-error-on-unmatched-pattern"
+  },
   "engines": {
     "node": ">=20"
   },
-  "packageManager": "pnpm@10.12.3"
+  "packageManager": "pnpm@12.18.0"
 }

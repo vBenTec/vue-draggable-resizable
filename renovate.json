@@ -1,0 +1,68 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":dependencyDashboard",
+    "helpers:pinGitHubActionDigestsToSemver"
+  ],
+  "baseBranchPatterns": ["dev"],
+  "rangeStrategy": "bump",
+  "timezone": "Europe/Berlin",
+  "schedule": ["before 6am on monday"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "packageRules": [
+    {
+      "description": "Supply-chain safety: let new npm releases settle before proposing them",
+      "matchDatasources": ["npm"],
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Automerge minor/patch devDependency updates (CI gates them)",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    },
+    {
+      "description": "The vue peer range is widened by hand; never bump it (that would narrow the supported range)",
+      "matchDepTypes": ["peerDependencies"],
+      "enabled": false
+    },
+    {
+      "groupName": "oxc",
+      "matchPackageNames": ["oxlint", "oxfmt"]
+    },
+    {
+      "groupName": "build tooling",
+      "matchPackageNames": [
+        "vite",
+        "vitest",
+        "rolldown",
+        "rolldown-plugin-dts",
+        "@vitejs/plugin-vue"
+      ]
+    },
+    {
+      "groupName": "vue",
+      "matchPackageNames": ["vue", "vue-tsc", "@vue/test-utils"]
+    },
+    {
+      "groupName": "github actions",
+      "matchManagers": ["github-actions"]
+    },
+    {
+      "description": "Hold TypeScript below 7: vue-tsc needs the JS API that TS 7 dropped. Remove once vue-tsc supports TS 7.",
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<7"
+    },
+    {
+      "description": "@types/node follows the Node LTS we target; bump its major by hand",
+      "matchPackageNames": ["@types/node"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    }
+  ]
+}
