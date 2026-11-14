@@ -1,3 +1,5 @@
+import type { EmitFn, ShortEmitsToObject } from 'vue'
+
 import type { Point, Rect, ReferenceLineMap, ResizeHandle, Size } from '../core/types'
 
 export interface DraggableResizableProps {
@@ -77,18 +79,8 @@ export type DraggableResizableEmits = {
   'resize-end': [payload: ResizePayload]
 }
 
-type UnionToIntersection<U> = (U extends unknown ? (arg: U) => void : never) extends (
-  arg: infer I,
-) => void
-  ? I
-  : never
-
 /** @internal Type of the component's `emit` function, for the composables. */
-export type DraggableResizableEmit = UnionToIntersection<
-  {
-    [K in keyof DraggableResizableEmits]: (event: K, ...args: DraggableResizableEmits[K]) => void
-  }[keyof DraggableResizableEmits]
->
+export type DraggableResizableEmit = EmitFn<ShortEmitsToObject<DraggableResizableEmits>>
 
 /** @internal What a `DraggableContainer` provides to the elements inside it. */
 export interface ContainerContext {
