@@ -1,298 +1,275 @@
 <script setup lang="ts">
-import { computed, ref, toRef, useTemplateRef, onMounted, watch, useId } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
 
-import { filterHandles } from '@/utils'
-import { useContainerProvider } from '@/vue/components/DraggableContainer/useContainerProvider'
-import { ALL_HANDLES } from '@/vue/components/DraggableResizable/handles'
-import { DraggableResizableProps } from '@/vue/components/DraggableResizable/types'
-import { useDraggableContainer } from '@/vue/components/DraggableResizable/useDraggableContainer'
-import { useLimitSize } from '@/vue/components/DraggableResizable/useLimitSize'
-import { useResizeHandle } from '@/vue/components/DraggableResizable/useResizeHandle'
-import { useParentSize } from '@/vue/composables/useParent'
-
-import type { ResizingHandle } from './types'
+import { ALL_HANDLES, filterHandles } from '../../core/handles'
+import type { ConstraintOptions, ResizeHandle } from '../../core/types'
+import { useContainer } from '../composables/useContainer'
+import { useDrag } from '../composables/useDrag'
+import { useParentSize } from '../composables/useParentSize'
+import { useResize } from '../composables/useResize'
+import type { DraggableResizableEmits, DraggableResizableProps } from '../types'
 
 const props = withDefaults(defineProps<DraggableResizableProps>(), {
-  handles: ALL_HANDLES,
-  classNameActive: 'active',
-  classNameHandle: 'handle',
-  classNameResizing: 'resizing',
-  classNameDragging: 'dragging',
-  classNameDraggable: 'draggable',
-  classNameResizable: 'resizable',
-  minW: 20,
-  minH: 20,
-  parent: false,
   draggable: true,
   resizable: true,
+  minW: 20,
+  minH: 20,
+  handles: () => [...ALL_HANDLES],
+  classNameDraggable: 'vdr-draggable',
+  classNameResizable: 'vdr-resizable',
+  classNameDragging: 'vdr-dragging',
+  classNameResizing: 'vdr-resizing',
+  classNameActive: 'vdr-active',
+  classNameHandle: 'vdr-handle',
 })
 
-const emit = defineEmits<{
-  activated: []
-  deactivated: []
-  'drag-start': [Event]
-  'resize-start': [Event]
-  dragging: [Event]
-  resizing: [Event]
-  'drag-end': [Event]
-  'resize-end': [Event]
+const emit = defineEmits<DraggableResizableEmits>()
+
+defineSlots<{
+  default?: () => unknown
 }>()
 
-const width = defineModel<number>('w', { default: (props) => props.initW ?? 0 })
-const height = defineModel<number>('h', { default: (props) => props.initH ?? 0 })
-const x = defineModel<number>('x', { default: (props) => props.x ?? 0 })
-const y = defineModel<number>('y', { default: (props) => props.y ?? 0 })
-
-const active = defineModel<boolean>('active', { default: (props) => props.active })
+const x = defineModel<number>('x', { default: 0 })
+const y = defineModel<number>('y', { default: 0 })
+// Falls back to `initW` / `initH` while the size is not controlled from outside.
+const w = defineModel<number>('w', {
+  default: (raw: Record<string, unknown>) => (typeof raw.initW === 'number' ? raw.initW : 0),
+})
+const h = defineModel<number>('h', {
+  default: (raw: Record<string, unknown>) => (typeof raw.initH === 'number' ? raw.initH : 0),
+})
+const active = defineModel<boolean>('active', { default: false })
 
 const id = useId()
-
-watch(active, (newVal) => {
-  if (newVal) {
-    emit('activated')
-  } else {
-    emit('deactivated')
-  }
-})
-
-const resizingHandle = ref<ResizingHandle>('')
-const resizingMaxWidth = ref<number>(Infinity)
-const resizingMaxHeight = ref<number>(Infinity)
-const resizingMinWidth = ref<number>(props.minW)
-const resizingMinHeight = ref<number>(props.minH)
+const root = useTemplateRef<HTMLDivElement>('root')
+const container = useContainer()
 
 const dragging = ref(false)
-const resizing = ref(false)
+const resizingHandle = ref<ResizeHandle | null>(null)
+const resizing = computed(() => resizingHandle.value !== null)
 
-const aspectRatio = computed(() => height.value / width.value)
+const constraints = computed<ConstraintOptions>(() => ({
+  disabledX: props.disabledX,
+  disabledY: props.disabledY,
+  disabledW: props.disabledW,
+  disabledH: props.disabledH,
+  minW: props.minW,
+  minH: props.minH,
+  maxW: props.maxW,
+  maxH: props.maxH,
+  parent: props.parent,
+  lockAspectRatio: props.lockAspectRatio,
+}))
 
-const setWidth = (value: number) => {
-  width.value = Math.floor(value)
-}
+// The parent's size is needed for `parent` bounds and for snapping to the parent's edges.
+const { parentSize, refresh: refreshParentSize } = useParentSize(
+  root,
+  () => props.parent || container !== null,
+)
 
-const setHeight = (value: number) => {
-  height.value = Math.floor(value)
-}
-
-const setTop = (value: number) => {
-  y.value = Math.floor(value)
-}
-
-const setLeft = (value: number) => {
-  x.value = Math.floor(value)
-}
-
-const containerProvider = useContainerProvider()
-
-const containerRef = useTemplateRef('container')
-
-const { parentHeight, parentWidth } = useParentSize(containerRef, {
-  enabled: toRef(props, 'parent'),
+const drag = useDrag({
+  id,
+  x,
+  y,
+  w,
+  h,
+  dragging,
+  enabled: () => props.draggable,
+  constraints,
+  parentSize,
+  container,
+  emit,
 })
 
-useLimitSize(
-  {
-    resizingMinHeight,
-    resizingMinWidth,
-    resizingMaxWidth,
-    resizingMaxHeight,
-    parentWidth,
-    parentHeight,
-    width,
-    height,
-    y,
-    x,
-  },
-  {
-    useParent: props.parent,
-    disabledH: props.disabledH,
-    disabledW: props.disabledW,
-    disabledY: props.disabledY,
-    disabledX: props.disabledX,
-  },
-)
+const resize = useResize({
+  x,
+  y,
+  w,
+  h,
+  resizingHandle,
+  enabled: () => props.resizable,
+  constraints,
+  parentSize,
+  emit,
+})
 
-const { resizeHandleDown } = useResizeHandle(
-  {
-    width,
-    height,
-    x,
-    y,
-    aspectRatio,
-    parentHeight,
-    parentWidth,
-    minH: toRef(props, 'minH'),
-    minW: toRef(props, 'minW'),
-  },
-  {
-    resizing,
-    resizingHandle,
-    handles: toRef(props, 'handles'),
-    resizingMaxWidth,
-    resizingMinHeight,
-    resizingMaxHeight,
-    resizingMinWidth,
-  },
-  {
-    setWidth,
-    setHeight,
-    setTop,
-    setLeft,
-    emit,
-  },
-  {
-    lockAspectRatio: props.lockAspectRatio,
-    resizable: props.resizable,
-    parent: parent,
-  },
-)
+const onPointerDown = (event: PointerEvent) => {
+  active.value = true
+  if (resizing.value) return
+  refreshParentSize()
+  drag.onPointerDown(event)
+}
 
-useDraggableContainer(
-  { x, y, w: width, h: height },
-  {
-    container: containerRef,
-    active,
-    dragging,
-    resizing,
-    handles: props.handles,
-    id,
-  },
-  {
-    draggable: toRef(props, 'draggable'),
-    emit,
-    parent,
-    parentWidth,
-    parentHeight,
-  },
-)
+const onHandlePointerDown = (event: PointerEvent, handle: ResizeHandle) => {
+  if (dragging.value) return
+  refreshParentSize()
+  resize.onPointerDown(event, handle)
+}
+
+const onOutsidePointerDown = (event: PointerEvent) => {
+  if (active.value && !root.value?.contains(event.target as Node | null)) {
+    active.value = false
+  }
+}
+
+watch(active, (isActive) => {
+  if (isActive) emit('activated')
+  else emit('deactivated')
+})
+
+onMounted(() => document.addEventListener('pointerdown', onOutsidePointerDown))
+onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutsidePointerDown))
+
+if (container) {
+  const syncPosition = () =>
+    container.updatePosition(id, { x: x.value, y: y.value, w: w.value, h: h.value })
+
+  onMounted(syncPosition)
+  watch([x, y, w, h], syncPosition)
+  onBeforeUnmount(() => container.removePosition(id))
+}
+
+const visibleHandles = computed(() => (props.resizable ? filterHandles(props.handles) : []))
 
 const style = computed(() => ({
-  width: `${width.value}px`,
-  height: `${height.value}px`,
-  top: `${y.value}px`,
   left: `${x.value}px`,
+  top: `${y.value}px`,
+  width: `${w.value}px`,
+  height: `${h.value}px`,
+  // Without this the browser claims touch gestures for scrolling and cancels the pointer.
+  touchAction: props.draggable || props.resizable ? 'none' : undefined,
 }))
 
-const handlesFiltered = computed(() => (props.resizable ? filterHandles(props.handles) : []))
-
-const containerClass = computed(() => ({
-  [props.classNameActive]: active.value,
-  [props.classNameDragging]: dragging.value,
-  [props.classNameResizing]: resizing.value,
+const stateClasses = computed(() => ({
   [props.classNameDraggable]: props.draggable,
   [props.classNameResizable]: props.resizable,
+  [props.classNameDragging]: dragging.value,
+  [props.classNameResizing]: resizing.value,
+  [props.classNameActive]: active.value,
 }))
 
-onMounted(() => {
-  if (!containerRef.value) return
-
-  containerRef.value.ondragstart = () => false
-
-  containerProvider?.updatePosition(id, {
-    x: x.value,
-    y: y.value,
-    w: width.value,
-    h: height.value,
-  })
-})
+const handleClasses = (handle: ResizeHandle) => [
+  ...new Set([
+    'vdr-handle',
+    `vdr-handle-${handle}`,
+    props.classNameHandle,
+    `${props.classNameHandle}-${handle}`,
+  ]),
+]
 </script>
 
 <template>
   <div
-    @click="active = true"
-    ref="container"
+    ref="root"
     class="vdr-container"
-    :class="containerClass"
+    :class="stateClasses"
     :style="style"
+    :data-active="active || undefined"
+    :data-dragging="dragging || undefined"
+    :data-resizing="resizingHandle ?? undefined"
+    @click="active = true"
+    @pointerdown="onPointerDown"
+    @dragstart.prevent
   >
     <slot />
     <div
-      v-for="item in handlesFiltered"
-      :key="item"
-      @mousedown.passive="resizeHandleDown($event, item)"
-      @touchstart.passive="resizeHandleDown($event, item)"
-      :style="{ display: active ? 'block' : 'none' }"
-      class="vdr-handle"
-      :class="[`vdr-handle-${item}`, classNameHandle, `${classNameHandle}-${item}`]"
+      v-for="handle in visibleHandles"
+      v-show="active"
+      :key="handle"
+      :class="handleClasses(handle)"
+      :data-handle="handle"
+      @pointerdown.stop="onHandlePointerDown($event, handle)"
     />
   </div>
 </template>
 
-<style scoped>
+<style>
 .vdr-container {
   position: absolute;
-  border: 1px solid transparent;
   box-sizing: border-box;
+  border: var(--vdr-border-width, 1px) solid transparent;
 }
 
-.vdr-container.active {
-  border-color: #000;
+.vdr-container[data-active] {
+  border-color: var(--vdr-border-color, #000);
   border-style: dashed;
 }
 
-.vdr-container.dragging {
-  border-color: #000;
+.vdr-container[data-dragging] {
   border-style: solid;
 }
 
+.vdr-container[data-dragging],
+.vdr-container[data-resizing] {
+  user-select: none;
+}
+
 .vdr-handle {
-  box-sizing: border-box;
+  --_vdr-handle-size: var(--vdr-handle-size, 7px);
+  /* Centres the handle on the container's border. */
+  --_vdr-handle-offset: calc((var(--_vdr-handle-size) + var(--vdr-border-width, 1px)) / -2);
+
   position: absolute;
-  width: 7px;
-  height: 7px;
-  background: #f0f0f0;
-  border: 1px solid #333;
+  box-sizing: border-box;
+  width: var(--_vdr-handle-size);
+  height: var(--_vdr-handle-size);
+  background: var(--vdr-handle-background, #f0f0f0);
+  border: 1px solid var(--vdr-handle-border-color, #333);
 }
 
-.vdr-handle-tl {
-  top: -4px;
-  left: -4px;
-  cursor: nw-resize;
-}
-
-.vdr-handle-tm {
-  top: -4px;
-  left: 50%;
-  margin-left: -3px;
-  cursor: n-resize;
-}
-
+.vdr-handle-tl,
+.vdr-handle-tm,
 .vdr-handle-tr {
-  top: -4px;
-  right: -4px;
-  cursor: ne-resize;
+  top: var(--_vdr-handle-offset);
 }
 
-.vdr-handle-ml {
-  top: 50%;
-  margin-top: -3px;
-  left: -4px;
-  cursor: w-resize;
+.vdr-handle-bl,
+.vdr-handle-bm,
+.vdr-handle-br {
+  bottom: var(--_vdr-handle-offset);
 }
 
+.vdr-handle-tl,
+.vdr-handle-ml,
+.vdr-handle-bl {
+  left: var(--_vdr-handle-offset);
+}
+
+.vdr-handle-tr,
+.vdr-handle-mr,
+.vdr-handle-br {
+  right: var(--_vdr-handle-offset);
+}
+
+.vdr-handle-tm,
+.vdr-handle-bm {
+  left: 50%;
+  margin-left: calc(var(--_vdr-handle-size) / -2);
+}
+
+.vdr-handle-ml,
 .vdr-handle-mr {
   top: 50%;
-  margin-top: -3px;
-  right: -4px;
-  cursor: e-resize;
+  margin-top: calc(var(--_vdr-handle-size) / -2);
 }
 
-.vdr-handle-bl {
-  bottom: -4px;
-  left: -4px;
-  cursor: sw-resize;
-}
-
-.vdr-handle-bm {
-  bottom: -4px;
-  left: 50%;
-  margin-left: -4px;
-  cursor: s-resize;
-}
-
+.vdr-handle-tl,
 .vdr-handle-br {
-  bottom: -4px;
-  right: -4px;
-  cursor: se-resize;
+  cursor: nwse-resize;
+}
+
+.vdr-handle-tr,
+.vdr-handle-bl {
+  cursor: nesw-resize;
+}
+
+.vdr-handle-tm,
+.vdr-handle-bm {
+  cursor: ns-resize;
+}
+
+.vdr-handle-ml,
+.vdr-handle-mr {
+  cursor: ew-resize;
 }
 </style>

@@ -1,0 +1,12 @@
+{
+  // Declaration build (see rolldown.dts.config.ts): the published sources only.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": [],
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test-d.ts", "src/test-utils"]
+}

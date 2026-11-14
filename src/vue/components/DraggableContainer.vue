@@ -1,68 +1,75 @@
 <script setup lang="ts">
-import { computed, toRef } from 'vue'
+import { computed } from 'vue'
 
-import type { Props } from '@/vue/components/DraggableContainer/types'
-import { provideContainer } from '@/vue/components/DraggableContainer/useContainerProvider'
+import { provideContainer } from '../composables/useContainer'
+import type { DraggableContainerProps } from '../types'
 
-const props = withDefaults(defineProps<Props>(), {
-  disabled: false,
+const props = withDefaults(defineProps<DraggableContainerProps>(), {
   adsorbParent: true,
   referenceLineVisible: true,
-  referenceLineColor: '#f00',
   adsorbCols: () => [],
   adsorbRows: () => [],
 })
 
-const { state } = provideContainer({
-  disabled: toRef(props, 'disabled'),
-  adsorbParent: toRef(props, 'adsorbParent'),
-  adsorbCols: toRef(props, 'adsorbCols'),
-  adsorbRows: toRef(props, 'adsorbRows'),
-  referenceLineVisible: toRef(props, 'referenceLineVisible'),
-  referenceLineColor: toRef(props, 'referenceLineColor'),
-})
+defineSlots<{
+  default?: () => unknown
+}>()
 
-const matchedRows = computed(() => (state.matchedLine && state.matchedLine.row) || [])
-const matchedCols = computed(() => (state.matchedLine && state.matchedLine.col) || [])
+const { matchedLines } = provideContainer(() => ({
+  disabled: props.disabled,
+  adsorbParent: props.adsorbParent,
+  adsorbCols: props.adsorbCols,
+  adsorbRows: props.adsorbRows,
+}))
+
+const style = computed(() =>
+  props.referenceLineColor ? { '--vdr-reference-line-color': props.referenceLineColor } : undefined,
+)
 </script>
 
 <template>
-  <div class="draggable-container">
+  <div class="vdr-snap-container" :style="style">
     <slot />
-    <template v-if="referenceLineVisible">
+    <template v-if="referenceLineVisible && matchedLines">
       <div
-        v-for="item in matchedCols"
-        :key="item"
-        class="reference-line"
-        :style="{
-          width: '0',
-          height: '100%',
-          top: '0',
-          left: `${item}px`,
-          borderLeft: `1px dashed ${referenceLineColor}`,
-          position: 'absolute',
-        }"
+        v-for="value in matchedLines.col"
+        :key="`col-${value}`"
+        class="vdr-reference-line vdr-reference-line-col"
+        :style="{ left: `${value}px` }"
       />
       <div
-        v-for="item in matchedRows"
-        :key="item"
-        class="reference-line"
-        :style="{
-          width: '100%',
-          height: '0',
-          top: `${item}px`,
-          borderTop: `1px dashed ${referenceLineColor}`,
-          position: 'absolute',
-        }"
+        v-for="value in matchedLines.row"
+        :key="`row-${value}`"
+        class="vdr-reference-line vdr-reference-line-row"
+        :style="{ top: `${value}px` }"
       />
     </template>
   </div>
 </template>
 
-<style scoped>
-.draggable-container {
+<style>
+.vdr-snap-container {
+  position: relative;
   width: 100%;
   height: 100%;
-  position: relative;
+}
+
+.vdr-reference-line {
+  position: absolute;
+  pointer-events: none;
+}
+
+.vdr-reference-line-col {
+  top: 0;
+  width: 0;
+  height: 100%;
+  border-left: 1px dashed var(--vdr-reference-line-color, #f00);
+}
+
+.vdr-reference-line-row {
+  left: 0;
+  width: 100%;
+  height: 0;
+  border-top: 1px dashed var(--vdr-reference-line-color, #f00);
 }
 </style>
