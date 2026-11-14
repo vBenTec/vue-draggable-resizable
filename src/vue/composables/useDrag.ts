@@ -51,28 +51,29 @@ export const useDrag = ({
         const start: Rect = { x: startX, y: startY, w: w.value, h: h.value }
         const limits = calculateSizeLimits(options, parentSize.value, start.w, start.h)
 
-        let { x: nextX, y: nextY } = constrainPosition(
-          moveRect(start, deltaX, deltaY, options),
-          limits,
-          options,
-        )
-
-        if (referenceLines) {
-          const snapped = snapToReferenceLines({ ...start, x: nextX, y: nextY }, referenceLines, {
-            x: !options.disabledX,
-            y: !options.disabledY,
-          })
-          // Snapping must never push the element out of its bounds.
-          ;({ x: nextX, y: nextY } = constrainPosition({ ...start, ...snapped }, limits, options))
-
-          container?.setMatchedLines(
-            getMatchedLines({ ...start, x: nextX, y: nextY }, referenceLines),
-          )
+        // Clamps the position only; the size does not change while dragging.
+        const keepInBounds = (rect: Rect): Rect => {
+          const bounded = constrainPosition(rect, limits, options)
+          return { ...start, x: bounded.x, y: bounded.y }
         }
 
-        x.value = nextX
-        y.value = nextY
-        emit('dragging', { x: nextX, y: nextY })
+        const moved = keepInBounds(moveRect(start, deltaX, deltaY, options))
+        // Snapping must never push the element out of its bounds.
+        const next = referenceLines
+          ? keepInBounds({
+              ...start,
+              ...snapToReferenceLines(moved, referenceLines, {
+                x: !options.disabledX,
+                y: !options.disabledY,
+              }),
+            })
+          : moved
+
+        if (referenceLines) container?.setMatchedLines(getMatchedLines(next, referenceLines))
+
+        x.value = next.x
+        y.value = next.y
+        emit('dragging', { x: next.x, y: next.y })
       },
       onEnd: () => {
         stopTracking = null
