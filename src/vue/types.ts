@@ -84,9 +84,28 @@ export type DraggableResizableEmit = EmitFn<ShortEmitsToObject<DraggableResizabl
 
 /** @internal What a `DraggableContainer` provides to the elements inside it. */
 export interface ContainerContext {
-  updatePosition: (id: string, rect: Rect) => void
-  removePosition: (id: string) => void
-  /** Guides the element `id` can snap to, or `null` while snapping is disabled. */
-  getGuides: (id: string, parentSize: Size | null) => Guides | null
-  setMatchedGuides: (guides: Guides | null) => void
+  /**
+   * Registers an element as a snap target until the calling scope is disposed. Call it during
+   * setup; `getRect` is only read when another member starts a drag.
+   */
+  join: (getRect: () => Rect) => ContainerMember
+}
+
+/** @internal An element registered with a container. */
+export interface ContainerMember {
+  /** Starts snapping a drag of this member to the guides of the container and the others. */
+  startSnap: (parentSize: Size | null) => SnapSession
+}
+
+/**
+ * @internal One drag's access to the container's guides. Only the most recently started session
+ * can publish; it ends with the drag or when its member leaves the container.
+ */
+export interface SnapSession {
+  /** Guides to snap to, `null` while snapping is disabled. */
+  readonly guides: Guides | null
+  /** Shows the guides the element is aligned with. */
+  publish: (matched: Guides | null) => void
+  /** Hides the matched guides. */
+  end: () => void
 }

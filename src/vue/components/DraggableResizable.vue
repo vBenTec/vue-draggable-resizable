@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, useId, useTemplateRef, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 
 import { ALL_HANDLES, filterHandles } from '../../core/handles'
 import type { ConstraintOptions, Rect, ResizeHandle } from '../../core/types'
-import { useContainer } from '../composables/useContainer'
+import { useContainerMember } from '../composables/useContainer'
 import { useGesture } from '../composables/useGesture'
 import type { DraggableResizableEmits, DraggableResizableProps } from '../types'
 
@@ -57,9 +57,9 @@ const rect = computed<Rect>({
   },
 })
 
-const id = useId()
 const root = useTemplateRef<HTMLDivElement>('root')
-const container = useContainer()
+// Other elements in a `DraggableContainer` snap to this one, whether or not it can be dragged.
+const member = useContainerMember(() => rect.value)
 
 const constraints = computed<ConstraintOptions>(() => ({
   disabledX,
@@ -75,13 +75,12 @@ const constraints = computed<ConstraintOptions>(() => ({
 }))
 
 const { gesture, startDrag, startResize } = useGesture({
-  id,
   root,
   rect,
   constraints,
   draggable: () => draggable,
   resizable: () => resizable,
-  container,
+  member,
   emit,
 })
 
@@ -108,14 +107,6 @@ watch(active, (isActive) => {
 
 onMounted(() => document.addEventListener('pointerdown', onOutsidePointerDown))
 onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutsidePointerDown))
-
-if (container) {
-  const syncPosition = () => container.updatePosition(id, rect.value)
-
-  onMounted(syncPosition)
-  watch(rect, syncPosition)
-  onBeforeUnmount(() => container.removePosition(id))
-}
 
 const visibleHandles = computed(() => (resizable ? filterHandles(handles) : []))
 

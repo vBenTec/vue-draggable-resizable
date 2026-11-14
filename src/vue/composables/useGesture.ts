@@ -3,21 +3,21 @@ import { onScopeDispose, readonly, shallowRef, type Ref, type ShallowRef } from 
 import { isPrimaryPointer, trackPointer, type PointerSessionHandlers } from '../../core/pointer'
 import { dragRect, resizeRect } from '../../core/positioning'
 import type { ConstraintOptions, Rect, ResizeHandle } from '../../core/types'
-import type { ContainerContext, DraggableResizableEmit } from '../types'
+import type { ContainerMember, DraggableResizableEmit } from '../types'
 import { useParentSize } from './useParentSize'
 
 /** The gesture an element is performing: a drag, or a resize by one of its handles. */
 export type Gesture = { kind: 'drag' } | { kind: 'resize'; handle: ResizeHandle }
 
 export interface UseGestureOptions {
-  id: string
   /** The element; its parent is measured for `parent` bounds and snapping. */
   root: Readonly<ShallowRef<HTMLElement | null>>
   rect: Ref<Rect>
   constraints: Readonly<Ref<ConstraintOptions>>
   draggable: () => boolean
   resizable: () => boolean
-  container: ContainerContext | null
+  /** Membership in a `DraggableContainer`, for snapping while dragging. */
+  member: ContainerMember | null
   emit: DraggableResizableEmit
 }
 
@@ -26,13 +26,12 @@ export interface UseGestureOptions {
  * starts and stops tracking the pointer when the owning scope is disposed.
  */
 export const useGesture = ({
-  id,
   root,
   rect,
   constraints,
   draggable,
   resizable,
-  container,
+  member,
   emit,
 }: UseGestureOptions) => {
   const gesture = shallowRef<Gesture | null>(null)
@@ -41,7 +40,7 @@ export const useGesture = ({
   // The parent's size is needed for `parent` bounds and for snapping to the parent's edges.
   const { parentSize, refresh: refreshParentSize } = useParentSize(
     root,
-    () => !!constraints.value.parent || container !== null,
+    () => !!constraints.value.parent || member !== null,
   )
 
   /** Whether `event` may start a gesture; if so, brings the parent's size up to date. */
@@ -66,7 +65,7 @@ export const useGesture = ({
     if (!canStart(event, draggable())) return
 
     const start = rect.value
-    const guides = container?.getGuides(id, parentSize.value) ?? null
+    const snap = member?.startSnap(parentSize.value) ?? null
 
     gesture.value = { kind: 'drag' }
     emit('drag-start', { x: start.x, y: start.y })
@@ -79,16 +78,16 @@ export const useGesture = ({
           deltaY,
           options: constraints.value,
           parentSize: parentSize.value,
-          guides,
+          guides: snap?.guides ?? null,
         })
 
-        if (next.matchedGuides) container?.setMatchedGuides(next.matchedGuides)
+        snap?.publish(next.matchedGuides)
 
         rect.value = { ...rect.value, x: next.x, y: next.y }
         emit('dragging', { x: next.x, y: next.y })
       },
       onEnd: () => {
-        container?.setMatchedGuides(null)
+        snap?.end()
         emit('drag-end', { x: rect.value.x, y: rect.value.y })
       },
     })
@@ -120,12 +119,11 @@ export const useGesture = ({
     })
   }
 
-  // Unmounting mid-gesture stops it without emitting an end event.
+  // Unmounting mid-gesture stops it without emitting an end event. The container hides the
+  // matched guides itself when the member leaves.
   onScopeDispose(() => {
-    if (!stopTracking) return
-    stopTracking()
+    stopTracking?.()
     stopTracking = null
-    if (gesture.value?.kind === 'drag') container?.setMatchedGuides(null)
   })
 
   return { gesture: readonly(gesture), startDrag, startResize }
