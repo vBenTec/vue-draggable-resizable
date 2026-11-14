@@ -1,4 +1,4 @@
-import { onBeforeUnmount, type Ref, type ShallowRef } from 'vue'
+import { onScopeDispose, type Ref, type ShallowRef } from 'vue'
 
 import { isPrimaryPointer, trackPointer } from '../../core/pointer'
 import { resizeRect } from '../../core/positioning'
@@ -66,7 +66,7 @@ export const useResize = ({
     })
   }
 
-  onBeforeUnmount(() => {
+  onScopeDispose(() => {
     stopTracking?.()
     stopTracking = null
   })

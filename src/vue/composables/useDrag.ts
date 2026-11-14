@@ -1,4 +1,4 @@
-import { onBeforeUnmount, type Ref, type ShallowRef } from 'vue'
+import { onScopeDispose, type Ref, type ShallowRef } from 'vue'
 
 import { isPrimaryPointer, trackPointer } from '../../core/pointer'
 import { calculateSizeLimits, constrainPosition, moveRect } from '../../core/positioning'
@@ -83,7 +83,7 @@ export const useDrag = ({
     })
   }
 
-  onBeforeUnmount(() => {
+  onScopeDispose(() => {
     if (!stopTracking) return
     stopTracking()
     stopTracking = null

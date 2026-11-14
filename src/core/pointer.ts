@@ -17,6 +17,9 @@ export const trackPointer = (
   const target = (startEvent.currentTarget as Node | null)?.ownerDocument ?? document
   const { pointerId, clientX: startX, clientY: startY } = startEvent
 
+  const controller = new AbortController()
+  const stop = () => controller.abort()
+
   const handleMove = (event: PointerEvent) => {
     if (event.pointerId !== pointerId) return
     onMove(event.clientX - startX, event.clientY - startY, event)
@@ -28,15 +31,10 @@ export const trackPointer = (
     onEnd()
   }
 
-  const stop = () => {
-    target.removeEventListener('pointermove', handleMove)
-    target.removeEventListener('pointerup', handleEnd)
-    target.removeEventListener('pointercancel', handleEnd)
-  }
-
-  target.addEventListener('pointermove', handleMove)
-  target.addEventListener('pointerup', handleEnd)
-  target.addEventListener('pointercancel', handleEnd)
+  const { signal } = controller
+  target.addEventListener('pointermove', handleMove, { signal })
+  target.addEventListener('pointerup', handleEnd, { signal })
+  target.addEventListener('pointercancel', handleEnd, { signal })
 
   return stop
 }
