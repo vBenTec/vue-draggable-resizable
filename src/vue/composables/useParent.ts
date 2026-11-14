@@ -1,14 +1,22 @@
-import {computed, Ref, ShallowRef,} from "vue";
-import {getElSize} from "@/utils";
+import { computed, Ref, ShallowRef } from 'vue'
 
-export const useParentSize = (containerRef: ShallowRef<HTMLDivElement | null>, options: {
+import { getElSize } from '@/utils'
+
+export const useParentSize = (
+  containerRef: ShallowRef<HTMLDivElement | null>,
+  options: {
     enabled: Readonly<Ref<boolean>>
-}) => {
-    const parent = computed(() => containerRef.value?.parentElement)
+  },
+) => {
+  const parent = computed(() => containerRef.value?.parentElement)
 
-    return {
-        parent,
-        parentWidth: computed(() => options.enabled && parent.value ? getElSize(parent.value).width : null),
-        parentHeight: computed(() => options.enabled && parent.value ? getElSize(parent.value).height : null),
-    }
+  return {
+    parent,
+    parentWidth: computed(() =>
+      options.enabled && parent.value ? getElSize(parent.value).width : null,
+    ),
+    parentHeight: computed(() =>
+      options.enabled && parent.value ? getElSize(parent.value).height : null,
+    ),
+  }
 }

@@ -1,53 +1,60 @@
 <script setup lang="ts">
-import {computed, toRef} from "vue";
-import {provideContainer} from "@/vue/components/DraggableContainer/useContainerProvider";
-import type {Props} from "@/vue/components/DraggableContainer/types";
+import { computed, toRef } from 'vue'
+
+import type { Props } from '@/vue/components/DraggableContainer/types'
+import { provideContainer } from '@/vue/components/DraggableContainer/useContainerProvider'
 
 const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   adsorbParent: true,
   referenceLineVisible: true,
   referenceLineColor: '#f00',
-  adsorbCols: ()=> [],
-  adsorbRows: ()=> []
+  adsorbCols: () => [],
+  adsorbRows: () => [],
 })
 
-const {state} = provideContainer({
+const { state } = provideContainer({
   disabled: toRef(props, 'disabled'),
   adsorbParent: toRef(props, 'adsorbParent'),
   adsorbCols: toRef(props, 'adsorbCols'),
   adsorbRows: toRef(props, 'adsorbRows'),
   referenceLineVisible: toRef(props, 'referenceLineVisible'),
-  referenceLineColor: toRef(props, 'referenceLineColor')
+  referenceLineColor: toRef(props, 'referenceLineColor'),
 })
 
-const matchedRows = computed(
-    () => (state.matchedLine && state.matchedLine.row) || []
-)
-const matchedCols = computed(
-    () => (state.matchedLine && state.matchedLine.col) || []
-)
+const matchedRows = computed(() => (state.matchedLine && state.matchedLine.row) || [])
+const matchedCols = computed(() => (state.matchedLine && state.matchedLine.col) || [])
 </script>
 
 <template>
   <div class="draggable-container">
-    <slot/>
+    <slot />
     <template v-if="referenceLineVisible">
-      <div v-for="item in matchedCols" :key="item" class="reference-line" :style="{
-        width: '0',
-        height: '100%',
-        top: '0',
-        left: `${item}px`,
-        borderLeft: `1px dashed ${referenceLineColor}`,
-        position: 'absolute',
-      }"/>
-      <div v-for="item in matchedRows" :key="item" class="reference-line" :style="{
-        width: '100%',
-        height: '0',
-        top: `${item}px`,
-        borderTop: `1px dashed ${referenceLineColor}`,
-        position: 'absolute',
-      }"/>
+      <div
+        v-for="item in matchedCols"
+        :key="item"
+        class="reference-line"
+        :style="{
+          width: '0',
+          height: '100%',
+          top: '0',
+          left: `${item}px`,
+          borderLeft: `1px dashed ${referenceLineColor}`,
+          position: 'absolute',
+        }"
+      />
+      <div
+        v-for="item in matchedRows"
+        :key="item"
+        class="reference-line"
+        :style="{
+          width: '100%',
+          height: '0',
+          top: `${item}px`,
+          borderTop: `1px dashed ${referenceLineColor}`,
+          position: 'absolute',
+        }"
+      />
     </template>
   </div>
 </template>

@@ -16,9 +16,9 @@
 
 - [Features](#features)
 - [Usage](#usage)
-    - [Component Props](#props)
-    - [Component Events](#events)
-    - [Using the Snapping Feature](#using-the-snapping-feature)
+  - [Component Props](#props)
+  - [Component Events](#events)
+  - [Using the Snapping Feature](#using-the-snapping-feature)
 
 ### Features
 
@@ -43,15 +43,15 @@ Register the component using the use method.
 ```js
 // >main.js
 import { createApp } from 'vue'
-import App from './App.vue'
 import Vue3DraggableResizable from 'vue3-draggable-resizable'
+
+import App from './App.vue'
+
 // Default styles need to be imported
 import 'vue3-draggable-resizable/dist/Vue3DraggableResizable.css'
 
 // You will get a global component named Vue3DraggableResizable
-createApp(App)
-    .use(Vue3DraggableResizable)
-    .mount('#app')
+createApp(App).use(Vue3DraggableResizable).mount('#app')
 ```
 
 Alternatively, you can use it within a single component.
@@ -60,11 +60,12 @@ Alternatively, you can use it within a single component.
 // >component.js
 import { defineComponent } from 'vue'
 import Vue3DraggableResizable from 'vue3-draggable-resizable'
+
 // Default styles need to be imported
 import 'vue3-draggable-resizable/dist/Vue3DraggableResizable.css'
 
 export default defineComponent({
-  components: { Vue3DraggableResizable }
+  components: { Vue3DraggableResizable },
   // ...other
 })
 ```

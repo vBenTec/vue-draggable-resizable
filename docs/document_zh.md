@@ -43,15 +43,15 @@ $ npm install vue3-draggable-resizable
 ```js
 // >main.js
 import { createApp } from 'vue'
-import App from './App.vue'
 import Vue3DraggableResizable from 'vue3-draggable-resizable'
+
+import App from './App.vue'
+
 //需引入默认样式
 import 'vue3-draggable-resizable/dist/Vue3DraggableResizable.css'
 
 // 你将会获得一个名为Vue3DraggableResizable的全局组件
-createApp(App)
-  .use(Vue3DraggableResizable)
-  .mount('#app')
+createApp(App).use(Vue3DraggableResizable).mount('#app')
 ```
 
 也可以单独在你的组件内部使用
@@ -60,11 +60,12 @@ createApp(App)
 // >component.js
 import { defineComponent } from 'vue'
 import Vue3DraggableResizable from 'vue3-draggable-resizable'
+
 //需引入默认样式
 import 'vue3-draggable-resizable/dist/Vue3DraggableResizable.css'
 
 export default defineComponent({
-  components: { Vue3DraggableResizable }
+  components: { Vue3DraggableResizable },
   // ...other
 })
 ```
@@ -103,6 +104,7 @@ export default defineComponent({
 <script>
 import { defineComponent } from 'vue'
 import Vue3DraggableResizable from 'vue3-draggable-resizable'
+
 //default styles
 import 'vue3-draggable-resizable/dist/Vue3DraggableResizable.css'
 export default defineComponent({
@@ -113,14 +115,14 @@ export default defineComponent({
       y: 100,
       h: 100,
       w: 100,
-      active: false
+      active: false,
     }
   },
   methods: {
     print(val) {
       console.log(val)
-    }
-  }
+    },
+  },
 })
 </script>
 <style>
@@ -522,12 +524,8 @@ payload: `{ x: number, y: number, w: number, h: number }`
   <div id="app">
     <div class="parent">
       <DraggableContainer>
-        <Vue3DraggableResizable>
-          Test
-        </Vue3DraggableResizable>
-        <Vue3DraggableResizable>
-          Another test
-        </Vue3DraggableResizable>
+        <Vue3DraggableResizable> Test </Vue3DraggableResizable>
+        <Vue3DraggableResizable> Another test </Vue3DraggableResizable>
       </DraggableContainer>
     </div>
   </div>
@@ -540,10 +538,11 @@ import Vue3DraggableResizable from 'vue3-draggable-resizable'
 // 如果你之前是通过“app.use(Vue3DraggableResizable)”注册的，
 // 那么你这里就不需要再引入了，因为DraggableContainer这个已经被全局注册了，你可以直接使用
 import { DraggableContainer } from 'vue3-draggable-resizable'
+
 //default styles
 import 'vue3-draggable-resizable/dist/Vue3DraggableResizable.css'
 export default defineComponent({
-  components: { Vue3DraggableResizable, DraggableContainer }
+  components: { Vue3DraggableResizable, DraggableContainer },
 })
 </script>
 <style>
@@ -572,12 +571,8 @@ default: `false`<br>
 
 ```html
 <DraggableContainer :disabled="true">
-  <Vue3DraggableResizable>
-    Test
-  </Vue3DraggableResizable>
-  <Vue3DraggableResizable>
-    Another test
-  </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Test </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Another test </Vue3DraggableResizable>
 </DraggableContainer>
 ```
 
@@ -590,12 +585,8 @@ default: `true`<br>
 
 ```html
 <DraggableContainer :adsorbParent="false">
-  <Vue3DraggableResizable>
-    Test
-  </Vue3DraggableResizable>
-  <Vue3DraggableResizable>
-    Another test
-  </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Test </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Another test </Vue3DraggableResizable>
 </DraggableContainer>
 ```
 
@@ -608,12 +599,8 @@ default: `null`<br>
 
 ```html
 <DraggableContainer :adsorbCols="[10,20,30]">
-  <Vue3DraggableResizable>
-    Test
-  </Vue3DraggableResizable>
-  <Vue3DraggableResizable>
-    Another test
-  </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Test </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Another test </Vue3DraggableResizable>
 </DraggableContainer>
 ```
 
@@ -626,12 +613,8 @@ default: `null`<br>
 
 ```html
 <DraggableContainer :adsorbRows="[10,20,30]">
-  <Vue3DraggableResizable>
-    Test
-  </Vue3DraggableResizable>
-  <Vue3DraggableResizable>
-    Another test
-  </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Test </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Another test </Vue3DraggableResizable>
 </DraggableContainer>
 ```
 
@@ -644,12 +627,8 @@ default: `true`<br>
 
 ```html
 <DraggableContainer :referenceLineVisible="false">
-  <Vue3DraggableResizable>
-    Test
-  </Vue3DraggableResizable>
-  <Vue3DraggableResizable>
-    Another test
-  </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Test </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Another test </Vue3DraggableResizable>
 </DraggableContainer>
 ```
 
@@ -662,11 +641,7 @@ default: `#f00`<br>
 
 ```html
 <DraggableContainer :referenceLineColor="#0f0">
-  <Vue3DraggableResizable>
-    Test
-  </Vue3DraggableResizable>
-  <Vue3DraggableResizable>
-    Another test
-  </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Test </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Another test </Vue3DraggableResizable>
 </DraggableContainer>
 ```

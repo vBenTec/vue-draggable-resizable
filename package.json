@@ -3,41 +3,23 @@
   "version": "1.6.1",
   "private": false,
   "description": "[Vue3 Component] draggable and resizable component for Vue 3, support snapping and aligning.",
-  "scripts": {
-    "dev-vue": "vite",
-    "serve": "vite preview",
-    "lint": "eslint --ext .js,.vue --ignore-path .gitignore --fix src",
-    "build": "vite build && tsc --emitDeclarationOnly",
-    "prepublishOnly": "npm run build"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.29.0",
-    "@types/node": "^24.0.4",
-    "@typescript-eslint/eslint-plugin": "^8.35.0",
-    "@typescript-eslint/parser": "^8.35.0",
-    "@vitejs/plugin-vue": "^6.0.0",
-    "eslint": "^9.29.0",
-    "eslint-config-prettier": "^10.1.5",
-    "eslint-plugin-vue": "^10.2.0",
-    "typescript": "~5.8.3",
-    "typescript-eslint": "^8.35.0",
-    "vite": "npm:rolldown-vite@latest",
-    "vue": "^3.5.17"
+  "keywords": [
+    "component",
+    "draggable",
+    "resizable",
+    "vue"
+  ],
+  "homepage": "https://github.com/vBenTec/vue3-draggable-resizable",
+  "bugs": {
+    "url": "https://github.com/vBenTec/vue3-draggable-resizable/issues"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vBenTec/vue3-draggable-resizable.git"
   },
-  "bugs": {
-    "url": "https://github.com/vBenTec/vue3-draggable-resizable/issues"
-  },
-  "homepage": "https://github.com/vBenTec/vue3-draggable-resizable",
-  "keywords": [
-    "vue",
-    "component",
-    "draggable",
-    "resizable"
+  "files": [
+    "dist"
   ],
   "main": "./dist/vue-draggable-resizable.umd.js",
   "module": "./dist/vue-draggable-resizable.mjs",
@@ -48,8 +30,24 @@
       "require": "./dist/vue-draggable-resizable.umd.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "scripts": {
+    "dev-vue": "vite",
+    "serve": "vite preview",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "build": "vite build && tsc --emitDeclarationOnly",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.4",
+    "@vitejs/plugin-vue": "^6.0.0",
+    "oxfmt": "^0.78.0",
+    "oxlint": "^1.93.0",
+    "typescript": "~5.8.3",
+    "vite": "npm:rolldown-vite@latest",
+    "vue": "^3.5.17"
+  },
   "packageManager": "pnpm@10.12.3"
 }

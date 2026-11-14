@@ -1,15 +1,16 @@
 <script setup lang="ts">
+import { computed, ref, toRef, useTemplateRef, onMounted, watch, useId } from 'vue'
 
-import {computed, ref, toRef, useTemplateRef, onMounted, watch, useId} from "vue";
-import {useParentSize} from "@/vue/composables/useParent";
-import {DraggableResizableProps} from "@/vue/components/DraggableResizable/types";
-import {ALL_HANDLES} from "@/vue/components/DraggableResizable/handles";
-import {filterHandles} from "@/utils";
-import {useContainerProvider} from "@/vue/components/DraggableContainer/useContainerProvider";
-import {useDraggableContainer} from "@/vue/components/DraggableResizable/useDraggableContainer";
-import {useResizeHandle} from "@/vue/components/DraggableResizable/useResizeHandle";
-import {useLimitSize} from "@/vue/components/DraggableResizable/useLimitSize";
-import type {ResizingHandle} from './types'
+import { filterHandles } from '@/utils'
+import { useContainerProvider } from '@/vue/components/DraggableContainer/useContainerProvider'
+import { ALL_HANDLES } from '@/vue/components/DraggableResizable/handles'
+import { DraggableResizableProps } from '@/vue/components/DraggableResizable/types'
+import { useDraggableContainer } from '@/vue/components/DraggableResizable/useDraggableContainer'
+import { useLimitSize } from '@/vue/components/DraggableResizable/useLimitSize'
+import { useResizeHandle } from '@/vue/components/DraggableResizable/useResizeHandle'
+import { useParentSize } from '@/vue/composables/useParent'
+
+import type { ResizingHandle } from './types'
 
 const props = withDefaults(defineProps<DraggableResizableProps>(), {
   handles: ALL_HANDLES,
@@ -37,13 +38,12 @@ const emit = defineEmits<{
   'resize-end': [Event]
 }>()
 
+const width = defineModel<number>('w', { default: (props) => props.initW ?? 0 })
+const height = defineModel<number>('h', { default: (props) => props.initH ?? 0 })
+const x = defineModel<number>('x', { default: (props) => props.x ?? 0 })
+const y = defineModel<number>('y', { default: (props) => props.y ?? 0 })
 
-const width = defineModel<number>('w', {default: (props) => props.initW ?? 0})
-const height = defineModel<number>('h', {default: (props) => props.initH ?? 0})
-const x = defineModel<number>('x', {default: (props) => props.x ?? 0})
-const y = defineModel<number>('y', {default: (props) => props.y ?? 0})
-
-const active = defineModel<boolean>('active', {default: (props) => props.active})
+const active = defineModel<boolean>('active', { default: (props) => props.active })
 
 const id = useId()
 
@@ -86,96 +86,101 @@ const containerProvider = useContainerProvider()
 
 const containerRef = useTemplateRef('container')
 
-const {parentHeight, parentWidth} = useParentSize(containerRef, {enabled: toRef(props, 'parent')})
-
-useLimitSize({
-  resizingMinHeight,
-  resizingMinWidth,
-  resizingMaxWidth,
-  resizingMaxHeight,
-  parentWidth,
-  parentHeight,
-  width,
-  height,
-  y,
-  x
-}, {
-  useParent: props.parent,
-  disabledH: props.disabledH,
-  disabledW: props.disabledW,
-  disabledY: props.disabledY,
-  disabledX: props.disabledX,
+const { parentHeight, parentWidth } = useParentSize(containerRef, {
+  enabled: toRef(props, 'parent'),
 })
 
-const {resizeHandleDown} = useResizeHandle(
-    {
-      width,
-      height,
-      x,
-      y,
-      aspectRatio,
-      parentHeight,
-      parentWidth,
-      minH: toRef(props, 'minH'),
-      minW: toRef(props, 'minW'),
-    },
-    {
-      resizing,
-      resizingHandle,
-      handles: toRef(props, 'handles'),
-      resizingMaxWidth,
-      resizingMinHeight,
-      resizingMaxHeight,
-      resizingMinWidth,
-    },
-    {
-      setWidth,
-      setHeight,
-      setTop,
-      setLeft,
-      emit,
-    },
-    {
-      lockAspectRatio: props.lockAspectRatio,
-      resizable: props.resizable,
-      parent: parent
-    }
+useLimitSize(
+  {
+    resizingMinHeight,
+    resizingMinWidth,
+    resizingMaxWidth,
+    resizingMaxHeight,
+    parentWidth,
+    parentHeight,
+    width,
+    height,
+    y,
+    x,
+  },
+  {
+    useParent: props.parent,
+    disabledH: props.disabledH,
+    disabledW: props.disabledW,
+    disabledY: props.disabledY,
+    disabledX: props.disabledX,
+  },
 )
 
-useDraggableContainer({x, y, w: width, h: height}, {
-  container: containerRef,
-  active,
-  dragging,
-  resizing,
-  handles: props.handles,
-  id
-}, {
-  draggable: toRef(props, 'draggable'),
-  emit,
-  parent,
-  parentWidth,
-  parentHeight,
-})
-
-const style = computed(() =>
-    ({
-      width: `${width.value}px`,
-      height: `${height.value}px`,
-      top: `${y.value}px`,
-      left: `${x.value}px`,
-    })
+const { resizeHandleDown } = useResizeHandle(
+  {
+    width,
+    height,
+    x,
+    y,
+    aspectRatio,
+    parentHeight,
+    parentWidth,
+    minH: toRef(props, 'minH'),
+    minW: toRef(props, 'minW'),
+  },
+  {
+    resizing,
+    resizingHandle,
+    handles: toRef(props, 'handles'),
+    resizingMaxWidth,
+    resizingMinHeight,
+    resizingMaxHeight,
+    resizingMinWidth,
+  },
+  {
+    setWidth,
+    setHeight,
+    setTop,
+    setLeft,
+    emit,
+  },
+  {
+    lockAspectRatio: props.lockAspectRatio,
+    resizable: props.resizable,
+    parent: parent,
+  },
 )
 
-const handlesFiltered = computed(() =>
-    props.resizable ? filterHandles(props.handles) : []
+useDraggableContainer(
+  { x, y, w: width, h: height },
+  {
+    container: containerRef,
+    active,
+    dragging,
+    resizing,
+    handles: props.handles,
+    id,
+  },
+  {
+    draggable: toRef(props, 'draggable'),
+    emit,
+    parent,
+    parentWidth,
+    parentHeight,
+  },
 )
+
+const style = computed(() => ({
+  width: `${width.value}px`,
+  height: `${height.value}px`,
+  top: `${y.value}px`,
+  left: `${x.value}px`,
+}))
+
+const handlesFiltered = computed(() => (props.resizable ? filterHandles(props.handles) : []))
 
 const containerClass = computed(() => ({
   [props.classNameActive]: active.value,
   [props.classNameDragging]: dragging.value,
   [props.classNameResizing]: resizing.value,
   [props.classNameDraggable]: props.draggable,
-  [props.classNameResizable]: props.resizable
+  [props.classNameResizable]: props.resizable,
 }))
 
 onMounted(() => {
@@ -187,19 +192,29 @@ onMounted(() => {
     x: x.value,
     y: y.value,
     w: width.value,
-    h: height.value
+    h: height.value,
   })
-
 })
 </script>
 
 <template>
-  <div @click="active = true" ref="container" class="vdr-container" :class="containerClass" :style="style">
-    <slot/>
-    <div v-for="item in handlesFiltered" :key="item" @mousedown.passive="resizeHandleDown($event, item)"
-         @touchstart.passive="resizeHandleDown($event, item)" :style="{ display: active ? 'block' : 'none' }"
-         class="vdr-handle"
-         :class="[`vdr-handle-${item}`, classNameHandle, `${classNameHandle}-${item}`]"/>
+  <div
+    @click="active = true"
+    ref="container"
+    class="vdr-container"
+    :class="containerClass"
+    :style="style"
+  >
+    <slot />
+    <div
+      v-for="item in handlesFiltered"
+      :key="item"
+      @mousedown.passive="resizeHandleDown($event, item)"
+      @touchstart.passive="resizeHandleDown($event, item)"
+      :style="{ display: active ? 'block' : 'none' }"
+      class="vdr-handle"
+      :class="[`vdr-handle-${item}`, classNameHandle, `${classNameHandle}-${item}`]"
+    />
   </div>
 </template>
 

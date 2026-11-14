@@ -45,15 +45,15 @@ Register the Vue3DraggableResizable
 ```js
 // >main.js
 import { createApp } from 'vue'
-import App from './App.vue'
 import Vue3DraggableResizable from 'vue3-draggable-resizable'
+
+import App from './App.vue'
+
 //default styles
 import 'vue3-draggable-resizable/dist/Vue3DraggableResizable.css'
 
 // You will have a global component named "Vue3DraggableResizable"
-createApp(App)
-  .use(Vue3DraggableResizable)
-  .mount('#app')
+createApp(App).use(Vue3DraggableResizable).mount('#app')
 ```
 
 You can also use it separately within the component
@@ -62,11 +62,12 @@ You can also use it separately within the component
 // >component.js
 import { defineComponent } from 'vue'
 import Vue3DraggableResizable from 'vue3-draggable-resizable'
+
 //default styles
 import 'vue3-draggable-resizable/dist/Vue3DraggableResizable.css'
 
 export default defineComponent({
-  components: { Vue3DraggableResizable }
+  components: { Vue3DraggableResizable },
   // ...other
 })
 ```
@@ -105,6 +106,7 @@ Here is a complete example of using "vue-template"
 <script>
 import { defineComponent } from 'vue'
 import Vue3DraggableResizable from 'vue3-draggable-resizable'
+
 //default styles
 import 'vue3-draggable-resizable/dist/Vue3DraggableResizable.css'
 export default defineComponent({
@@ -115,14 +117,14 @@ export default defineComponent({
       y: 100,
       h: 100,
       w: 100,
-      active: false
+      active: false,
     }
   },
   methods: {
     print(val) {
       console.log(val)
-    }
-  }
+    },
+  },
 })
 </script>
 <style>
@@ -506,12 +508,8 @@ This can be used as follows.
   <div id="app">
     <div class="parent">
       <DraggableContainer>
-        <Vue3DraggableResizable>
-          Test
-        </Vue3DraggableResizable>
-        <Vue3DraggableResizable>
-          Another test
-        </Vue3DraggableResizable>
+        <Vue3DraggableResizable> Test </Vue3DraggableResizable>
+        <Vue3DraggableResizable> Another test </Vue3DraggableResizable>
       </DraggableContainer>
     </div>
   </div>
@@ -523,10 +521,11 @@ import Vue3DraggableResizable from 'vue3-draggable-resizable'
 // This component is not exported by default
 // If you used "app.use(Vue3DraggableResizable)"，then you don't need to import it, you can use it directly.
 import { DraggableContainer } from 'vue3-draggable-resizable'
+
 //default styles
 import 'vue3-draggable-resizable/dist/Vue3DraggableResizable.css'
 export default defineComponent({
-  components: { Vue3DraggableResizable, DraggableContainer }
+  components: { Vue3DraggableResizable, DraggableContainer },
 })
 </script>
 <style>
@@ -555,12 +554,8 @@ Disable this feature
 
 ```html
 <DraggableContainer :disabled="true">
-  <Vue3DraggableResizable>
-    Test
-  </Vue3DraggableResizable>
-  <Vue3DraggableResizable>
-    Another test
-  </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Test </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Another test </Vue3DraggableResizable>
 </DraggableContainer>
 ```
 
@@ -573,12 +568,8 @@ Adsorption near parent component
 
 ```html
 <DraggableContainer :adsorbParent="false">
-  <Vue3DraggableResizable>
-    Test
-  </Vue3DraggableResizable>
-  <Vue3DraggableResizable>
-    Another test
-  </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Test </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Another test </Vue3DraggableResizable>
 </DraggableContainer>
 ```
 
@@ -591,12 +582,8 @@ Custom guides(column)
 
 ```html
 <DraggableContainer :adsorbCols="[10,20,30]">
-  <Vue3DraggableResizable>
-    Test
-  </Vue3DraggableResizable>
-  <Vue3DraggableResizable>
-    Another test
-  </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Test </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Another test </Vue3DraggableResizable>
 </DraggableContainer>
 ```
 
@@ -609,12 +596,8 @@ Custom guides(row)
 
 ```html
 <DraggableContainer :adsorbRows="[10,20,30]">
-  <Vue3DraggableResizable>
-    Test
-  </Vue3DraggableResizable>
-  <Vue3DraggableResizable>
-    Another test
-  </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Test </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Another test </Vue3DraggableResizable>
 </DraggableContainer>
 ```
 
@@ -627,12 +610,8 @@ reference line visible
 
 ```html
 <DraggableContainer :referenceLineVisible="false">
-  <Vue3DraggableResizable>
-    Test
-  </Vue3DraggableResizable>
-  <Vue3DraggableResizable>
-    Another test
-  </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Test </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Another test </Vue3DraggableResizable>
 </DraggableContainer>
 ```
 
@@ -645,12 +624,8 @@ reference line color
 
 ```html
 <DraggableContainer :referenceLineColor="#0f0">
-  <Vue3DraggableResizable>
-    Test
-  </Vue3DraggableResizable>
-  <Vue3DraggableResizable>
-    Another test
-  </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Test </Vue3DraggableResizable>
+  <Vue3DraggableResizable> Another test </Vue3DraggableResizable>
 </DraggableContainer>
 ```
 
@@ -680,16 +655,24 @@ import {
   calculateSizeLimits,
   constrainPosition,
   getReferenceLineMap,
-  findMatchedLine
+  findMatchedLine,
 } from './path/to/core'
 
 // Example: Basic draggable logic for any framework
 function makeDraggable(element, options) {
   let position = { x: 0, y: 0, w: 100, h: 100 }
-  
-  const limits = calculateSizeLimits(options, parentWidth, parentHeight, position.x, position.y, position.w, position.h)
+
+  const limits = calculateSizeLimits(
+    options,
+    parentWidth,
+    parentHeight,
+    position.x,
+    position.y,
+    position.w,
+    position.h,
+  )
   const constrained = constrainPosition(newX, newY, position.w, position.h, limits, options)
-  
+
   // Apply constrained position
   element.style.left = constrained.x + 'px'
   element.style.top = constrained.y + 'px'
