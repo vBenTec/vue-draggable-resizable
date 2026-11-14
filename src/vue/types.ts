@@ -99,7 +99,8 @@ export interface ContainerMember {
 
 /**
  * @internal One drag's access to the container's guides. Only the most recently started session
- * can publish; it ends with the drag or when its member leaves the container.
+ * that has not ended can publish; it ends with the drag, when its member starts another drag or
+ * when its member leaves the container.
  */
 export interface SnapSession {
   /** Guides to snap to, `null` while snapping is disabled. */

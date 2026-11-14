@@ -14,6 +14,8 @@ type Props = DraggableResizableProps & {
   w?: number
   h?: number
   active?: boolean
+  'onUpdate:w'?: (value: number) => void
+  'onUpdate:h'?: (value: number) => void
 }
 
 /** Mounts a 100x50 element at 100/100 inside a 300x300 parent. */
@@ -202,6 +204,18 @@ describe('dragging', () => {
     await dragBy(wrapper.element, -50, -50)
     expect(rectOf(wrapper.element)).toMatchObject({ x: -50, y: -50 })
   })
+
+  it('keeps inside the parent with the current size when it changes mid-drag', async () => {
+    const wrapper = mountElement({ parent: true })
+
+    pointer(wrapper.element, 'pointerdown', 0, 0)
+    pointer(document, 'pointermove', 10, 0)
+    await wrapper.setProps({ w: 150 })
+    pointer(document, 'pointermove', 500, 0)
+    await nextTick()
+
+    expect(wrapper.emitted('update:x')?.at(-1)).toEqual([150])
+  })
 })
 
 describe('resizing', () => {
@@ -327,6 +341,20 @@ describe('v-model', () => {
 
     await wrapper.setProps({ x: 15 })
     expect(rectOf(wrapper.element).x).toBe(15)
+  })
+
+  it('emits no size updates for a drag after the parent ignored a resize', async () => {
+    const wrapper = mountElement({ active: true, 'onUpdate:w': () => {}, 'onUpdate:h': () => {} })
+
+    await dragBy(handle(wrapper, 'br'), 10, 20)
+    const updatesW = wrapper.emitted('update:w')?.length
+    const updatesH = wrapper.emitted('update:h')?.length
+    expect(updatesW).toBeGreaterThan(0)
+
+    await dragBy(wrapper.element, 5, 5)
+    expect(wrapper.emitted('update:x')?.at(-1)).toEqual([105])
+    expect(wrapper.emitted('update:w')).toHaveLength(updatesW!)
+    expect(wrapper.emitted('update:h')).toHaveLength(updatesH!)
   })
 
   it('emits activated / deactivated for external changes', async () => {

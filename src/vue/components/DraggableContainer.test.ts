@@ -149,6 +149,18 @@ describe('DraggableContainer', () => {
     expect(rectOf(a).x).toBe(170)
   })
 
+  it('forgets elements that are unmounted', async () => {
+    const { a, state, guides, dragATo } = mountContainer({ snapToParent: false })
+
+    state.showB = false
+    await nextTick()
+
+    await dragATo(147, 104)
+    expect(rectOf(a)).toMatchObject({ x: 147, y: 104 })
+    expect(guides('x')).toEqual([])
+    expect(guides('y')).toEqual([])
+  })
+
   it('keeps a snapped element inside its parent', async () => {
     const { a, state, dragATo } = mountContainer({ snapToParent: false, guidesX: [-3, 303] })
     state.parent = true
@@ -160,5 +172,20 @@ describe('DraggableContainer', () => {
     pointer(document, 'pointermove', 252, 0)
     await nextTick()
     expect(rectOf(a).x).toBe(250)
+  })
+
+  it('clears the guides when the dragged element is unmounted', async () => {
+    const { wrapper, state, guides } = mountContainer()
+    const b = wrapper.get('.b').element
+
+    pointer(b, 'pointerdown', 0, 0)
+    pointer(document, 'pointermove', -100, 0)
+    await nextTick()
+    expect(guides('x').length).toBeGreaterThan(0)
+
+    state.showB = false
+    await nextTick()
+    expect(wrapper.find('.vdr-snap-container').exists()).toBe(true)
+    expect(wrapper.find('.vdr-guide').exists()).toBe(false)
   })
 })

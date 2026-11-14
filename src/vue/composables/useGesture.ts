@@ -35,7 +35,8 @@ export const useGesture = ({
   emit,
 }: UseGestureOptions) => {
   const gesture = shallowRef<Gesture | null>(null)
-  let stopTracking: (() => void) | null = null
+  // Stops the current gesture without end events and runs its cleanup.
+  let cancel: (() => void) | null = null
 
   // The parent's size is needed for `parent` bounds and for snapping to the parent's edges.
   const { parentSize, refresh: refreshParentSize } = useParentSize(
@@ -43,58 +44,73 @@ export const useGesture = ({
     () => !!constraints.value.parent || member !== null,
   )
 
-  /** Whether `event` may start a gesture; if so, brings the parent's size up to date. */
-  const canStart = (event: PointerEvent, enabled: boolean) => {
-    if (!enabled || gesture.value || !isPrimaryPointer(event)) return false
-    refreshParentSize()
-    return true
-  }
+  /** Whether `event` may start a gesture. */
+  const canStart = (event: PointerEvent, enabled: boolean) =>
+    enabled && !gesture.value && isPrimaryPointer(event)
 
-  const track = (event: PointerEvent, { onMove, onEnd }: PointerSessionHandlers) => {
-    stopTracking = trackPointer(event, {
+  /**
+   * Follows the pointer of `event` until it is released. `cleanup` runs when the gesture ends,
+   * before `onEnd`, and when it is cancelled.
+   */
+  const track = (
+    event: PointerEvent,
+    { onMove, onEnd }: PointerSessionHandlers,
+    cleanup: () => void = () => {},
+  ) => {
+    const stop = trackPointer(event, {
       onMove,
       onEnd: () => {
-        stopTracking = null
+        cancel = null
         gesture.value = null
+        cleanup()
         onEnd()
       },
     })
+    cancel = () => {
+      stop()
+      cleanup()
+    }
   }
 
   const startDrag = (event: PointerEvent) => {
     if (!canStart(event, draggable())) return
+    refreshParentSize()
 
-    const start = rect.value
+    // Only the position is fixed at the start; bounds and snapping use the current size.
+    const origin = { x: rect.value.x, y: rect.value.y }
     const snap = member?.startSnap(parentSize.value) ?? null
 
     gesture.value = { kind: 'drag' }
-    emit('drag-start', { x: start.x, y: start.y })
+    emit('drag-start', { ...origin })
 
-    track(event, {
-      onMove: (deltaX, deltaY) => {
-        const next = dragRect({
-          start,
-          deltaX,
-          deltaY,
-          options: constraints.value,
-          parentSize: parentSize.value,
-          guides: snap?.guides ?? null,
-        })
+    track(
+      event,
+      {
+        onMove: (deltaX, deltaY) => {
+          const current = rect.value
+          const next = dragRect({
+            start: { ...current, ...origin },
+            deltaX,
+            deltaY,
+            options: constraints.value,
+            parentSize: parentSize.value,
+            guides: snap?.guides ?? null,
+          })
 
-        snap?.publish(next.matchedGuides)
+          snap?.publish(next.matchedGuides)
 
-        rect.value = { ...rect.value, x: next.x, y: next.y }
-        emit('dragging', { x: next.x, y: next.y })
+          rect.value = { ...current, x: next.x, y: next.y }
+          emit('dragging', { x: next.x, y: next.y })
+        },
+        onEnd: () => emit('drag-end', { x: rect.value.x, y: rect.value.y }),
       },
-      onEnd: () => {
-        snap?.end()
-        emit('drag-end', { x: rect.value.x, y: rect.value.y })
-      },
-    })
+      () => snap?.end(),
+    )
   }
 
   const startResize = (event: PointerEvent, handle: ResizeHandle) => {
     if (!canStart(event, resizable())) return
+    refreshParentSize()
 
     const start = rect.value
 
@@ -119,11 +135,10 @@ export const useGesture = ({
     })
   }
 
-  // Unmounting mid-gesture stops it without emitting an end event. The container hides the
-  // matched guides itself when the member leaves.
+  // Unmounting mid-gesture stops it without emitting an end event and hides its matched guides.
   onScopeDispose(() => {
-    stopTracking?.()
-    stopTracking = null
+    cancel?.()
+    cancel = null
   })
 
   return { gesture: readonly(gesture), startDrag, startResize }

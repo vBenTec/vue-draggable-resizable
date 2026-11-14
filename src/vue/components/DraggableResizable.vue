@@ -46,14 +46,15 @@ const h = defineModel<number>('h', {
 })
 const active = defineModel<boolean>('active', { default: false })
 
-// The four models as one value. Writing it only emits updates for the models that changed.
+// The four models as one value. Writing it only emits updates for the models that changed: a
+// model that is written its current value would still emit if the parent ignored its last update.
 const rect = computed<Rect>({
   get: () => ({ x: x.value, y: y.value, w: w.value, h: h.value }),
   set: (next) => {
-    x.value = next.x
-    y.value = next.y
-    w.value = next.w
-    h.value = next.h
+    if (next.x !== x.value) x.value = next.x
+    if (next.y !== y.value) y.value = next.y
+    if (next.w !== w.value) w.value = next.w
+    if (next.h !== h.value) h.value = next.h
   },
 })
 

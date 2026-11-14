@@ -96,6 +96,28 @@ describe('provideContainer', () => {
     expect(matched()).toEqual(someGuides)
   })
 
+  it('shows the guides of an older session again once the newer one ends', () => {
+    const { members, matched } = mountContainer()
+    const first = members.a!.startSnap(null)
+    const second = members.b!.startSnap(null)
+
+    second.end()
+    expect(matched()).toBeNull()
+
+    first.publish(someGuides)
+    expect(matched()).toEqual(someGuides)
+  })
+
+  it('ends the previous session of a member that starts another one', () => {
+    const { members, matched } = mountContainer()
+    const first = members.a!.startSnap(null)
+    const second = members.a!.startSnap(null)
+
+    second.end()
+    first.publish(someGuides)
+    expect(matched()).toBeNull()
+  })
+
   it('hides the guides when the member of the session leaves', async () => {
     const { rects, members, matched } = mountContainer()
     members.a!.startSnap(null).publish(someGuides)

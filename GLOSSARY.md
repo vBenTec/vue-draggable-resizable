@@ -18,4 +18,5 @@ container is a member, whether or not it can be dragged itself.
 
 **Snap session**: One drag's access to the container's guides. It starts with the drag, publishes
 the matched guides on every move and clears them when it ends. Only the most recently started
-session can publish.
+session that has not ended can publish, so an older live session shows its guides again once the
+newer one ends.
