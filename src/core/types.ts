@@ -1,41 +1,24 @@
-export type ResizingHandle = 'tl' | 'tm' | 'tr' | 'ml' | 'mr' | 'bl' | 'bm' | 'br' | ''
+/** Identifier of a resize handle: `t`op / `m`iddle / `b`ottom + `l`eft / `m`iddle / `r`ight. */
+export type ResizeHandle = 'tl' | 'tm' | 'tr' | 'ml' | 'mr' | 'bl' | 'bm' | 'br'
 
-export interface Position {
+export interface Point {
   x: number
   y: number
+}
+
+export interface Size {
+  width: number
+  height: number
+}
+
+/** Position and size of an element, in px relative to its offset parent. */
+export interface Rect extends Point {
   w: number
   h: number
 }
 
-export type PositionStore = Record<string, Position>
-
-export interface ReferenceLineMap {
-  col: {
-    [propName: number]: {
-      min: number
-      max: number
-      value: number
-    }
-  }
-  row: {
-    [propName: number]: {
-      min: number
-      max: number
-      value: number
-    }
-  }
-}
-
-export interface MatchedLine {
-  row?: number
-  col?: number
-}
-
-export type HandleEvent = MouseEvent | TouchEvent
-
-export interface DraggableOptions {
-  draggable?: boolean
-  resizable?: boolean
+/** Everything that restricts how an element may be moved or resized. */
+export interface ConstraintOptions {
   disabledX?: boolean
   disabledY?: boolean
   disabledW?: boolean
@@ -44,16 +27,9 @@ export interface DraggableOptions {
   minH?: number
   maxW?: number
   maxH?: number
+  /** Keep the element inside its parent. */
   parent?: boolean
-  handles?: ResizingHandle[]
   lockAspectRatio?: boolean
-}
-
-export interface ContainerOptions {
-  disabled?: boolean
-  adsorbParent?: boolean
-  adsorbCols?: number[]
-  adsorbRows?: number[]
 }
 
 export interface SizeLimits {
@@ -65,4 +41,20 @@ export interface SizeLimits {
   minTop: number
   maxLeft: number
   maxTop: number
+}
+
+export interface SnapOptions {
+  disabled?: boolean
+  /** Snap to the edges and the centre of the parent. */
+  adsorbParent?: boolean
+  /** Custom vertical guides (x coordinates). */
+  adsorbCols?: readonly number[]
+  /** Custom horizontal guides (y coordinates). */
+  adsorbRows?: readonly number[]
+}
+
+/** Coordinates that an element can snap to. `row` holds y values, `col` holds x values. */
+export interface ReferenceLineMap {
+  row: number[]
+  col: number[]
 }

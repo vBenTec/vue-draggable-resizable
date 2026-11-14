@@ -1,22 +1,30 @@
-import { resolve } from 'path'
+import { fileURLToPath } from 'node:url'
 
 import vue from '@vitejs/plugin-vue'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  root: __dirname,
   plugins: [vue()],
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, '/src'),
-    },
-  },
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/vue/index.ts'),
-      name: 'VueDraggableResizable',
-      fileName: 'vue-draggable-resizable',
+      entry: fileURLToPath(new URL('./src/index.ts', import.meta.url)),
+      formats: ['es'],
+      fileName: () => 'index.js',
+      cssFileName: 'style',
+    },
+    // Consumers minify; readable output is easier to debug and to patch.
+    minify: false,
+    rolldownOptions: {
+      external: ['vue'],
+    },
+  },
+  test: {
+    environment: 'happy-dom',
+    include: ['src/**/*.test.ts'],
+    typecheck: {
+      enabled: true,
+      checker: 'vue-tsc',
+      include: ['src/**/*.test-d.ts'],
     },
   },
 })

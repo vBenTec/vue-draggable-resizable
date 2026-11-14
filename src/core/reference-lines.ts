@@ -1,94 +1,82 @@
-import { ReferenceLineMap, PositionStore, ContainerOptions } from './types'
+import type { Point, Rect, ReferenceLineMap, Size, SnapOptions } from './types'
 
+/** Distance (px) within which an element snaps to a reference line. */
+export const SNAP_THRESHOLD = 5
+
+/** Tolerance for treating two coordinates as aligned (guards against float noise). */
+const ALIGN_EPSILON = 0.01
+
+/** Start, centre and end of a span. Order matters: it is the snapping priority. */
+const spanLines = (start: number, length: number) => [start, start + length / 2, start + length]
+
+/**
+ * Collects every coordinate an element may snap to: custom guides, the parent's edges and centre,
+ * and the edges and centres of the other elements.
+ */
 export const getReferenceLineMap = (
-  containerOptions: ContainerOptions,
-  parentWidth: number,
-  parentHeight: number,
-  positionStore: PositionStore,
-  excludeId?: string,
+  options: SnapOptions,
+  parentSize: Size | null,
+  rects: Iterable<Rect>,
 ): ReferenceLineMap | null => {
-  if (containerOptions.disabled) return null
+  if (options.disabled) return null
 
-  const referenceLine = {
-    row: [] as number[],
-    col: [] as number[],
+  const row = new Set<number>(options.adsorbRows)
+  const col = new Set<number>(options.adsorbCols)
+
+  if (options.adsorbParent && parentSize) {
+    for (const value of spanLines(0, parentSize.height)) row.add(value)
+    for (const value of spanLines(0, parentSize.width)) col.add(value)
   }
 
-  referenceLine.row.push(...(containerOptions.adsorbRows || []))
-  referenceLine.col.push(...(containerOptions.adsorbCols || []))
-
-  if (containerOptions.adsorbParent) {
-    referenceLine.row.push(0, parentHeight, parentHeight / 2)
-    referenceLine.col.push(0, parentWidth, parentWidth / 2)
+  for (const { x, y, w, h } of rects) {
+    for (const value of spanLines(y, h)) row.add(value)
+    for (const value of spanLines(x, w)) col.add(value)
   }
 
-  const filteredStore = { ...positionStore }
-  if (excludeId) {
-    delete filteredStore[excludeId]
-  }
-
-  Object.values(filteredStore).forEach(({ x, y, w, h }) => {
-    referenceLine.row.push(y, y + h, y + h / 2)
-    referenceLine.col.push(x, x + w, x + w / 2)
-  })
-
-  return {
-    row: referenceLine.row.reduce((pre, cur) => {
-      return { ...pre, [cur]: { min: cur - 5, max: cur + 5, value: cur } }
-    }, {}),
-    col: referenceLine.col.reduce((pre, cur) => {
-      return { ...pre, [cur]: { min: cur - 5, max: cur + 5, value: cur } }
-    }, {}),
-  } as ReferenceLineMap
+  return { row: [...row], col: [...col] }
 }
 
-export const findMatchedLine = (
+/** Snapped start of a span, or `null` if none of its lines is close enough to a reference line. */
+const snapSpan = (start: number, length: number, references: readonly number[]): number | null => {
+  let best: { start: number; distance: number } | null = null
+
+  for (const [index, line] of spanLines(start, length).entries()) {
+    for (const reference of references) {
+      const distance = Math.abs(line - reference)
+      if (distance <= SNAP_THRESHOLD && (!best || distance < best.distance)) {
+        best = { start: reference - (index * length) / 2, distance }
+      }
+    }
+  }
+
+  return best ? best.start : null
+}
+
+/**
+ * Snaps a rect's position to the closest reference line per axis. Axes set to `false` in `axes`
+ * are left alone.
+ */
+export const snapToReferenceLines = (
+  rect: Rect,
   referenceLineMap: ReferenceLineMap,
-  widgetLines: { col: number[]; row: number[] },
-  widgetSize: { width: number; height: number },
-): { row: number[]; col: number[]; snappedX?: number; snappedY?: number } => {
-  const matched: { row: number[]; col: number[]; snappedX?: number; snappedY?: number } = {
-    row: [],
-    col: [],
-  }
+  axes: { x?: boolean; y?: boolean } = {},
+): Point => ({
+  x: axes.x === false ? rect.x : (snapSpan(rect.x, rect.w, referenceLineMap.col) ?? rect.x),
+  y: axes.y === false ? rect.y : (snapSpan(rect.y, rect.h, referenceLineMap.row) ?? rect.y),
+})
 
-  // Check row matches
-  for (let i = 0; i < widgetLines.row.length; i++) {
-    const line = widgetLines.row[i]
-    for (const refLine of Object.values(referenceLineMap.row)) {
-      if (line >= refLine.min && line <= refLine.max) {
-        matched.row.push(refLine.value)
-        // Calculate snapped position based on which line matched
-        if (i === 0) {
-          matched.snappedY = refLine.value
-        } else if (i === 1) {
-          matched.snappedY = refLine.value - widgetSize.height / 2
-        } else if (i === 2) {
-          matched.snappedY = refLine.value - widgetSize.height
-        }
-        break
-      }
-    }
-  }
-
-  // Check col matches
-  for (let i = 0; i < widgetLines.col.length; i++) {
-    const line = widgetLines.col[i]
-    for (const refLine of Object.values(referenceLineMap.col)) {
-      if (line >= refLine.min && line <= refLine.max) {
-        matched.col.push(refLine.value)
-        // Calculate snapped position based on which line matched
-        if (i === 0) {
-          matched.snappedX = refLine.value
-        } else if (i === 1) {
-          matched.snappedX = refLine.value - widgetSize.width / 2
-        } else if (i === 2) {
-          matched.snappedX = refLine.value - widgetSize.width
-        }
-        break
-      }
-    }
-  }
-
-  return matched
+const alignedLines = (start: number, length: number, references: readonly number[]) => {
+  const lines = spanLines(start, length)
+  return references.filter((reference) =>
+    lines.some((line) => Math.abs(line - reference) <= ALIGN_EPSILON),
+  )
 }
+
+/** The reference lines a rect is currently aligned with. */
+export const getMatchedLines = (
+  rect: Rect,
+  referenceLineMap: ReferenceLineMap,
+): ReferenceLineMap => ({
+  row: alignedLines(rect.y, rect.h, referenceLineMap.row),
+  col: alignedLines(rect.x, rect.w, referenceLineMap.col),
+})

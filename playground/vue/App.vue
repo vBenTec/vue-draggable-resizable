@@ -22,65 +22,7 @@
     </div>
     <div>active:{{ state.active }}<br /></div>
 
-    <!--    <DraggableContainerLegacy>-->
-    <!--      <Vue3DraggableResizable-->
-    <!--          :initW="40"-->
-    <!--          :initH="80"-->
-    <!--          v-model:x="state.x"-->
-    <!--          v-model:y="state.y"-->
-    <!--          v-model:w="state.w"-->
-    <!--          v-model:h="state.h"-->
-    <!--          v-model:active="state.active"-->
-    <!--          :draggable="true"-->
-    <!--          :resizable="true"-->
-    <!--          :disabledX="false"-->
-    <!--          :disabledW="false"-->
-    <!--          :disabledH="false"-->
-    <!--          :disabledY="false"-->
-    <!--          :lockAspectRatio="true"-->
-    <!--          classNameHandle="my-handle"-->
-    <!--          @activated="print('activated')"-->
-    <!--          @deactivated="print('deactivated')"-->
-    <!--          @drag-start="print('drag-start', $event)"-->
-    <!--          @resize-start="print('resize-start', $event)"-->
-    <!--          @dragging="print('dragging', $event)"-->
-    <!--          @resizing="print('resizing', $event)"-->
-    <!--          @drag-end="print('drag-end', $event)"-->
-    <!--          @resize-end="print('resize-end', $event)"-->
-    <!--      >-->
-    <!--        This is a test example-->
-    <!--      </Vue3DraggableResizable>-->
-
-    <!--      <Vue3DraggableResizable-->
-    <!--          :initW="40"-->
-    <!--          :initH="80"-->
-    <!--          :x="20"-->
-    <!--          :y="40"-->
-    <!--          v-model:w="state.w"-->
-    <!--          v-model:h="state.h"-->
-    <!--          v-model:active="state.active"-->
-    <!--          :draggable="true"-->
-    <!--          :resizable="true"-->
-    <!--          :disabledX="false"-->
-    <!--          :disabledW="false"-->
-    <!--          :disabledH="false"-->
-    <!--          :disabledY="false"-->
-    <!--          :lockAspectRatio="true"-->
-    <!--          classNameHandle="my-handle"-->
-    <!--          @activated="print('activated')"-->
-    <!--          @deactivated="print('deactivated')"-->
-    <!--          @drag-start="print('drag-start', $event)"-->
-    <!--          @resize-start="print('resize-start', $event)"-->
-    <!--          @dragging="print('dragging', $event)"-->
-    <!--          @resizing="print('resizing', $event)"-->
-    <!--          @drag-end="print('drag-end', $event)"-->
-    <!--          @resize-end="print('resize-end', $event)"-->
-    <!--      >-->
-    <!--        This is a test example-->
-    <!--      </Vue3DraggableResizable>-->
-    <!--    </DraggableContainerLegacy>-->
-
-    <h2>New Stack</h2>
+    <h2>Parent bounds, locked aspect ratio</h2>
     <div class="parent">
       <DraggableResizable
         :initW="40"
@@ -107,10 +49,11 @@
         @drag-end="print('drag-end', $event)"
         @resize-end="print('resize-end', $event)"
       >
-        Example ist a test
+        Example
       </DraggableResizable>
     </div>
 
+    <h2>Snapping container</h2>
     <div class="parent">
       <DraggableContainer>
         <DraggableResizable
@@ -138,7 +81,7 @@
           @drag-end="print('drag-end', $event)"
           @resize-end="print('resize-end', $event)"
         >
-          Example ist a test
+          Example
         </DraggableResizable>
 
         <DraggableResizable
@@ -153,7 +96,7 @@
           :disabledY="false"
           :lockAspectRatio="true"
         >
-          Example ist a test
+          Example
         </DraggableResizable>
 
         <DraggableResizable
@@ -169,7 +112,7 @@
           :disabledY="false"
           :lockAspectRatio="true"
         >
-          Example ist a test
+          Example
         </DraggableResizable>
       </DraggableContainer>
     </div>
@@ -179,8 +122,8 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
 
-import DraggableContainer from '@/vue/components/DraggableContainer/index.vue'
-import DraggableResizable from '@/vue/components/DraggableResizable/index.vue'
+import { DraggableContainer, DraggableResizable } from '../../src'
+import type { DragPayload, ResizePayload } from '../../src'
 
 const state = reactive({
   x: 100,
@@ -190,8 +133,8 @@ const state = reactive({
   active: false,
 })
 
-const print = (msg: string, event?: Event) => {
-  console.log(msg, event ? event : '')
+const print = (msg: string, payload?: DragPayload | ResizePayload) => {
+  console.log(msg, payload ?? '')
 }
 </script>
 
@@ -208,11 +151,5 @@ const print = (msg: string, event?: Event) => {
   position: relative;
   border: 1px solid #000;
   user-select: none;
-
-  :deep() {
-    .vdr-container {
-      border-color: #999;
-    }
-  }
 }
 </style>
