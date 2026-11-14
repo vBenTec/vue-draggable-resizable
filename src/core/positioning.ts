@@ -22,6 +22,10 @@ export interface ResizeInput {
   parentSize: Size | null
 }
 
+/** Edge moved by the first / second letter of a handle; `m`iddle moves neither. */
+const VERTICAL_EDGES: Partial<Record<string, VerticalEdge>> = { t: 't', b: 'b' }
+const HORIZONTAL_EDGES: Partial<Record<string, HorizontalEdge>> = { l: 'l', r: 'r' }
+
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max))
 
 /**
@@ -90,8 +94,8 @@ export const getResizeEdges = (
   options: ConstraintOptions,
   lockAspectRatio = false,
 ): ResizeEdges => {
-  let vertical: VerticalEdge = handle[0] === 't' ? 't' : handle[0] === 'b' ? 'b' : null
-  let horizontal: HorizontalEdge = handle[1] === 'l' ? 'l' : handle[1] === 'r' ? 'r' : null
+  let vertical = VERTICAL_EDGES[handle.charAt(0)] ?? null
+  let horizontal = HORIZONTAL_EDGES[handle.charAt(1)] ?? null
 
   if (lockAspectRatio) {
     if (handle === 'tm' || handle === 'ml') {
