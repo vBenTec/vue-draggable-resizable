@@ -26,15 +26,20 @@ ESM build and a test suite. See [Migrating from 1.x](README.md#migrating-from-1x
 - **`''` is no longer a valid handle**; the type is now `ResizeHandle`.
 - **Event payloads are typed** as `{ x, y }` (drag) and `{ x, y, w, h }` (resize). They were
   declared as DOM `Event`s before.
-- `DraggableContainer` renders `.vdr-snap-container`, and `referenceLineColor` has no prop
-  default any more — the colour falls back to `--vdr-reference-line-color`, then `#f00`.
+- **Renamed** the `DraggableContainer` snapping API to one term, _guide_:
+  - props: `adsorbParent` → `snapToParent`, `adsorbCols` → `guidesX`, `adsorbRows` → `guidesY`,
+    `referenceLineVisible` → `showGuides`, `referenceLineColor` → `guideColor`;
+  - classes: `.vdr-reference-line` → `.vdr-guide`, `-col` / `-row` → `.vdr-guide-x` /
+    `.vdr-guide-y`.
+- `DraggableContainer` renders `.vdr-snap-container`, and `guideColor` has no prop default any
+  more — the colour falls back to `--vdr-guide-color`, then `#f00`.
 
 ### Added
 
 - `maxW` and `maxH` props.
 - Theming through CSS custom properties (`--vdr-border-color`, `--vdr-border-width`,
   `--vdr-handle-size`, `--vdr-handle-background`, `--vdr-handle-border-color`,
-  `--vdr-reference-line-color`).
+  `--vdr-guide-color`).
 - `data-active`, `data-dragging`, `data-resizing="<handle>"` and `data-handle="<handle>"`
   attributes for styling and testing.
 - Exported types: `DraggableResizableProps`, `DraggableContainerProps`,

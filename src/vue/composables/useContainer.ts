@@ -1,7 +1,7 @@
 import { inject, provide, shallowRef, type InjectionKey } from 'vue'
 
-import { getReferenceLineMap } from '../../core/reference-lines'
-import type { Rect, ReferenceLineMap, SnapOptions } from '../../core/types'
+import { collectGuides } from '../../core/guides'
+import type { Guides, Rect, SnapOptions } from '../../core/types'
 import type { ContainerContext } from '../types'
 
 const CONTAINER_KEY: InjectionKey<ContainerContext> = Symbol('vdr-container')
@@ -10,7 +10,7 @@ const CONTAINER_KEY: InjectionKey<ContainerContext> = Symbol('vdr-container')
 export const provideContainer = (getOptions: () => SnapOptions) => {
   // Only read when a drag starts, so it does not need to be reactive.
   const positions = new Map<string, Rect>()
-  const matchedLines = shallowRef<ReferenceLineMap | null>(null)
+  const matchedGuides = shallowRef<Guides | null>(null)
 
   provide(CONTAINER_KEY, {
     updatePosition: (id, rect) => {
@@ -19,16 +19,16 @@ export const provideContainer = (getOptions: () => SnapOptions) => {
     removePosition: (id) => {
       positions.delete(id)
     },
-    getReferenceLines: (id, parentSize) => {
+    getGuides: (id, parentSize) => {
       const others = [...positions].filter(([key]) => key !== id).map(([, rect]) => rect)
-      return getReferenceLineMap(getOptions(), parentSize, others)
+      return collectGuides(getOptions(), parentSize, others)
     },
-    setMatchedLines: (lines) => {
-      matchedLines.value = lines
+    setMatchedGuides: (guides) => {
+      matchedGuides.value = guides
     },
   })
 
-  return { matchedLines }
+  return { matchedGuides }
 }
 
 export const useContainer = () => inject(CONTAINER_KEY, null)

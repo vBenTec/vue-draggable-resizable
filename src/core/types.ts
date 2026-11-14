@@ -46,15 +46,15 @@ export interface SizeLimits {
 export interface SnapOptions {
   disabled?: boolean
   /** Snap to the edges and the centre of the parent. */
-  adsorbParent?: boolean
+  snapToParent?: boolean
   /** Custom vertical guides (x coordinates). */
-  adsorbCols?: readonly number[]
+  guidesX?: readonly number[]
   /** Custom horizontal guides (y coordinates). */
-  adsorbRows?: readonly number[]
+  guidesY?: readonly number[]
 }
 
-/** Coordinates that an element can snap to. `row` holds y values, `col` holds x values. */
-export interface ReferenceLineMap {
-  row: number[]
-  col: number[]
+/** Coordinates an element can snap to: vertical guides on `x`, horizontal guides on `y`. */
+export interface Guides {
+  x: number[]
+  y: number[]
 }

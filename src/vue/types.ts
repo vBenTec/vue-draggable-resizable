@@ -1,6 +1,6 @@
 import type { EmitFn, ShortEmitsToObject } from 'vue'
 
-import type { Point, Rect, ReferenceLineMap, ResizeHandle, Size } from '../core/types'
+import type { Guides, Point, Rect, ResizeHandle, Size } from '../core/types'
 
 export interface DraggableResizableProps {
   /** Initial width (px), used when `w` / `v-model:w` is not set. */
@@ -51,15 +51,15 @@ export interface DraggableContainerProps {
   /** Turn snapping off. */
   disabled?: boolean
   /** Snap to the edges and the centre of the parent. @default true */
-  adsorbParent?: boolean
+  snapToParent?: boolean
   /** Custom vertical guides (x coordinates, px). */
-  adsorbCols?: readonly number[]
+  guidesX?: readonly number[]
   /** Custom horizontal guides (y coordinates, px). */
-  adsorbRows?: readonly number[]
-  /** Show the guide lines while dragging. @default true */
-  referenceLineVisible?: boolean
-  /** Colour of the guide lines. Defaults to `--vdr-reference-line-color`, then `#f00`. */
-  referenceLineColor?: string
+  guidesY?: readonly number[]
+  /** Show the matching guides while dragging. @default true */
+  showGuides?: boolean
+  /** Colour of the guides. Defaults to `--vdr-guide-color`, then `#f00`. */
+  guideColor?: string
 }
 
 /** Payload of `drag-start`, `dragging` and `drag-end`. */
@@ -86,7 +86,7 @@ export type DraggableResizableEmit = EmitFn<ShortEmitsToObject<DraggableResizabl
 export interface ContainerContext {
   updatePosition: (id: string, rect: Rect) => void
   removePosition: (id: string) => void
-  /** Lines the element `id` can snap to, or `null` while snapping is disabled. */
-  getReferenceLines: (id: string, parentSize: Size | null) => ReferenceLineMap | null
-  setMatchedLines: (lines: ReferenceLineMap | null) => void
+  /** Guides the element `id` can snap to, or `null` while snapping is disabled. */
+  getGuides: (id: string, parentSize: Size | null) => Guides | null
+  setMatchedGuides: (guides: Guides | null) => void
 }

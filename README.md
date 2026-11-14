@@ -16,7 +16,7 @@
 - Drag and resize with mouse, touch and pen (Pointer Events)
 - Restrict movement and size to the parent element
 - Min / max sizes, locked axes, locked aspect ratio
-- Snapping to other elements, the parent and custom guides, with live reference lines
+- Snapping to other elements, the parent and custom guides, drawn live while dragging
 - Fully typed props, events and `v-model`s
 - No runtime dependencies, ESM, SSR-safe, themeable with CSS custom properties
 
@@ -191,7 +191,7 @@ import 'vue3-draggable-resizable/style.css'
 
 <template>
   <div class="parent">
-    <DraggableContainer :adsorb-cols="[100, 200]">
+    <DraggableContainer :guides-x="[100, 200]">
       <DraggableResizable :init-w="80" :init-h="80">One</DraggableResizable>
       <DraggableResizable :init-w="80" :init-h="80" :x="150">Two</DraggableResizable>
     </DraggableContainer>
@@ -202,14 +202,14 @@ import 'vue3-draggable-resizable/style.css'
 The container fills its parent (`width: 100%; height: 100%; position: relative`). Elements snap
 when one of their edges or their centre comes within 5px of a guide.
 
-| Prop                   | Type                | Default | Description                                        |
-| ---------------------- | ------------------- | ------- | -------------------------------------------------- |
-| `disabled`             | `boolean`           | `false` | Turn snapping off.                                 |
-| `adsorbParent`         | `boolean`           | `true`  | Snap to the edges and the centre of the container. |
-| `adsorbCols`           | `readonly number[]` | `[]`    | Custom vertical guides (x coordinates in px).      |
-| `adsorbRows`           | `readonly number[]` | `[]`    | Custom horizontal guides (y coordinates in px).    |
-| `referenceLineVisible` | `boolean`           | `true`  | Draw the matching guides while dragging.           |
-| `referenceLineColor`   | `string`            | `#f00`  | Guide colour. Sets `--vdr-reference-line-color`.   |
+| Prop           | Type                | Default | Description                                        |
+| -------------- | ------------------- | ------- | -------------------------------------------------- |
+| `disabled`     | `boolean`           | `false` | Turn snapping off.                                 |
+| `snapToParent` | `boolean`           | `true`  | Snap to the edges and the centre of the container. |
+| `guidesX`      | `readonly number[]` | `[]`    | Custom vertical guides (x coordinates in px).      |
+| `guidesY`      | `readonly number[]` | `[]`    | Custom horizontal guides (y coordinates in px).    |
+| `showGuides`   | `boolean`           | `true`  | Draw the matching guides while dragging.           |
+| `guideColor`   | `string`            | `#f00`  | Guide colour. Sets `--vdr-guide-color`.            |
 
 ## Styling
 
@@ -223,18 +223,18 @@ The stylesheet is small and unscoped. Everything is prefixed with `vdr-`:
 | `.vdr-container[data-resizing]`       | … while resizing (the value is the handle). |
 | `.vdr-handle`, `.vdr-handle-<handle>` | A resize handle.                            |
 | `.vdr-snap-container`                 | The `DraggableContainer` root.              |
-| `.vdr-reference-line`, `-col`, `-row` | A guide line.                               |
+| `.vdr-guide`, `.vdr-guide-x`, `-y`    | A guide (`-x` vertical, `-y` horizontal).   |
 
 Theme it with CSS custom properties, set on the element or any ancestor:
 
-| Property                     | Default   |
-| ---------------------------- | --------- |
-| `--vdr-border-color`         | `#000`    |
-| `--vdr-border-width`         | `1px`     |
-| `--vdr-handle-size`          | `7px`     |
-| `--vdr-handle-background`    | `#f0f0f0` |
-| `--vdr-handle-border-color`  | `#333`    |
-| `--vdr-reference-line-color` | `#f00`    |
+| Property                    | Default   |
+| --------------------------- | --------- |
+| `--vdr-border-color`        | `#000`    |
+| `--vdr-border-width`        | `1px`     |
+| `--vdr-handle-size`         | `7px`     |
+| `--vdr-handle-background`   | `#f0f0f0` |
+| `--vdr-handle-border-color` | `#333`    |
+| `--vdr-guide-color`         | `#f00`    |
 
 ```css
 .editor {
@@ -311,13 +311,18 @@ pass the old names explicitly, for example `class-name-active="active"`.
 **5. Types.** Event handlers receive `{ x, y }` or `{ x, y, w, h }` and are typed that way. The
 handle type is `ResizeHandle` and no longer includes `''`.
 
-**6. Behaviour changes.** These may be visible if you depended on the old behaviour:
+**6. Snapping props.** The `DraggableContainer` props use one name, _guide_: `adsorbParent` →
+`snapToParent`, `adsorbCols` → `guidesX`, `adsorbRows` → `guidesY`, `referenceLineVisible` →
+`showGuides`, `referenceLineColor` → `guideColor`. The guides render as `.vdr-guide-x` /
+`.vdr-guide-y` (were `.vdr-reference-line-col` / `-row`), coloured by `--vdr-guide-color`.
+
+**7. Behaviour changes.** These may be visible if you depended on the old behaviour:
 
 - With `lockAspectRatio`, the `tr` and `bl` handles keep the opposite corner in place.
 - The parent's size is its padding box and follows the parent resizing.
 - `DraggableContainer` snaps to the closest guide, never pushes an element out of its parent,
-  and only draws guides the element is actually aligned with. `referenceLineColor` can also be
-  set with `--vdr-reference-line-color`.
+  and only draws guides the element is actually aligned with. `guideColor` can also be set with
+  `--vdr-guide-color`.
 
 The full list is in the [changelog](CHANGELOG.md).
 

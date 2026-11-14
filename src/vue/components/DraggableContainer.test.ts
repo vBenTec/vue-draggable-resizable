@@ -36,11 +36,11 @@ const mountContainer = (containerProps: DraggableContainerProps = {}) => {
   setInnerSize(wrapper.get('.vdr-snap-container').element, 300, 300)
 
   const a = wrapper.get('.a').element
-  const lines = (axis: 'col' | 'row') =>
+  const guides = (axis: 'x' | 'y') =>
     wrapper
-      .findAll(`.vdr-reference-line-${axis}`)
-      .map((line) =>
-        parseFloat((line.element as HTMLElement).style[axis === 'col' ? 'left' : 'top']),
+      .findAll(`.vdr-guide-${axis}`)
+      .map((guide) =>
+        parseFloat((guide.element as HTMLElement).style[axis === 'x' ? 'left' : 'top']),
       )
 
   /** Drags `a` from its origin to the given position and keeps the pointer down. */
@@ -50,7 +50,7 @@ const mountContainer = (containerProps: DraggableContainerProps = {}) => {
     await nextTick()
   }
 
-  return { wrapper, state, a, lines, dragATo }
+  return { wrapper, state, a, guides, dragATo }
 }
 
 afterEach(() => {
@@ -58,38 +58,38 @@ afterEach(() => {
 })
 
 describe('DraggableContainer', () => {
-  it('snaps to other elements and shows the matching lines while dragging', async () => {
-    const { a, lines, dragATo } = mountContainer()
+  it('snaps to other elements and shows the matching guides while dragging', async () => {
+    const { a, guides, dragATo } = mountContainer()
 
     // Right edge (x + 50) lands 3px before b's left edge, top 4px below b's top.
     await dragATo(147, 104)
     expect(rectOf(a)).toMatchObject({ x: 150, y: 100 })
     // a's left edge also happens to sit on the container's centre line.
-    expect(lines('col')).toEqual([150, 200])
-    expect(lines('row')).toEqual([150, 100, 125])
+    expect(guides('x')).toEqual([150, 200])
+    expect(guides('y')).toEqual([150, 100, 125])
 
     await release()
-    expect(lines('col')).toEqual([])
-    expect(lines('row')).toEqual([])
+    expect(guides('x')).toEqual([])
+    expect(guides('y')).toEqual([])
   })
 
   it('does not snap outside the threshold', async () => {
-    const { a, lines, dragATo } = mountContainer()
+    const { a, guides, dragATo } = mountContainer()
     await dragATo(140, 30)
     expect(rectOf(a)).toMatchObject({ x: 140, y: 30 })
-    expect(lines('col')).toEqual([])
+    expect(guides('x')).toEqual([])
   })
 
-  it('snaps to the parent edges and centre unless adsorbParent is off', async () => {
-    const { a, state, lines, dragATo } = mountContainer()
+  it('snaps to the parent edges and centre unless snapToParent is off', async () => {
+    const { a, state, guides, dragATo } = mountContainer()
 
     await dragATo(123, 3)
     expect(rectOf(a)).toMatchObject({ x: 125, y: 0 })
-    expect(lines('col')).toEqual([150])
-    expect(lines('row')).toEqual([0])
+    expect(guides('x')).toEqual([150])
+    expect(guides('y')).toEqual([0])
     await release()
 
-    state.container = { adsorbParent: false }
+    state.container = { snapToParent: false }
     await nextTick()
     pointer(a, 'pointerdown', 0, 0)
     pointer(document, 'pointermove', -2, 3)
@@ -98,29 +98,29 @@ describe('DraggableContainer', () => {
   })
 
   it('snaps to custom guides', async () => {
-    const { a, lines, dragATo } = mountContainer({ adsorbCols: [33], adsorbRows: [60] })
+    const { a, guides, dragATo } = mountContainer({ guidesX: [33], guidesY: [60] })
     await dragATo(35, 58)
     expect(rectOf(a)).toMatchObject({ x: 33, y: 60 })
-    expect(lines('col')).toEqual([33])
-    expect(lines('row')).toEqual([60])
+    expect(guides('x')).toEqual([33])
+    expect(guides('y')).toEqual([60])
   })
 
   it('does nothing while disabled', async () => {
-    const { a, lines, dragATo } = mountContainer({ disabled: true })
+    const { a, guides, dragATo } = mountContainer({ disabled: true })
     await dragATo(147, 104)
     expect(rectOf(a)).toMatchObject({ x: 147, y: 104 })
-    expect(lines('col')).toEqual([])
+    expect(guides('x')).toEqual([])
   })
 
-  it('can hide the lines and recolour them', async () => {
-    const { wrapper, state, lines, dragATo } = mountContainer({ referenceLineColor: '#0f0' })
+  it('can hide the guides and recolour them', async () => {
+    const { wrapper, state, guides, dragATo } = mountContainer({ guideColor: '#0f0' })
     const container = wrapper.get('.vdr-snap-container').element as HTMLElement
-    expect(container.style.getPropertyValue('--vdr-reference-line-color')).toBe('#0f0')
+    expect(container.style.getPropertyValue('--vdr-guide-color')).toBe('#0f0')
 
-    state.container = { referenceLineVisible: false }
+    state.container = { showGuides: false }
     await dragATo(147, 104)
-    expect(lines('col')).toEqual([])
-    expect(container.style.getPropertyValue('--vdr-reference-line-color')).toBe('')
+    expect(guides('x')).toEqual([])
+    expect(container.style.getPropertyValue('--vdr-guide-color')).toBe('')
   })
 
   it('tracks elements that move, resize or change from outside', async () => {
@@ -150,18 +150,18 @@ describe('DraggableContainer', () => {
   })
 
   it('forgets elements that are unmounted', async () => {
-    const { a, state, lines, dragATo } = mountContainer({ adsorbParent: false })
+    const { a, state, guides, dragATo } = mountContainer({ snapToParent: false })
 
     state.showB = false
     await nextTick()
 
     await dragATo(147, 104)
     expect(rectOf(a)).toMatchObject({ x: 147, y: 104 })
-    expect(lines('col')).toEqual([])
+    expect(guides('x')).toEqual([])
   })
 
   it('keeps a snapped element inside its parent', async () => {
-    const { a, state, dragATo } = mountContainer({ adsorbParent: false, adsorbCols: [-3, 303] })
+    const { a, state, dragATo } = mountContainer({ snapToParent: false, guidesX: [-3, 303] })
     state.parent = true
     await nextTick()
 
@@ -173,16 +173,16 @@ describe('DraggableContainer', () => {
     expect(rectOf(a).x).toBe(250)
   })
 
-  it('clears the lines when the dragged element is unmounted', async () => {
-    const { wrapper, lines } = mountContainer()
+  it('clears the guides when the dragged element is unmounted', async () => {
+    const { wrapper, guides } = mountContainer()
     const b = wrapper.get('.b').element
 
     pointer(b, 'pointerdown', 0, 0)
     pointer(document, 'pointermove', -100, 0)
     await nextTick()
-    expect(lines('col').length).toBeGreaterThan(0)
+    expect(guides('x').length).toBeGreaterThan(0)
 
     wrapper.unmount()
-    expect(document.querySelector('.vdr-reference-line')).toBeNull()
+    expect(document.querySelector('.vdr-guide')).toBeNull()
   })
 })

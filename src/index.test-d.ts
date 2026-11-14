@@ -88,9 +88,9 @@ describe('DraggableResizable', () => {
 
 describe('DraggableContainer', () => {
   it('types its props', () => {
-    expectTypeOf<ContainerProps['adsorbCols']>().toEqualTypeOf<readonly number[] | undefined>()
-    expectTypeOf<ContainerProps['referenceLineColor']>().toEqualTypeOf<string | undefined>()
+    expectTypeOf<ContainerProps['guidesX']>().toEqualTypeOf<readonly number[] | undefined>()
+    expectTypeOf<ContainerProps['guideColor']>().toEqualTypeOf<string | undefined>()
     expectTypeOf<ContainerProps>().toExtend<DraggableContainerProps>()
-    expectTypeOf<{ adsorbRows: string[] }>().not.toExtend<ContainerProps>()
+    expectTypeOf<{ guidesY: string[] }>().not.toExtend<ContainerProps>()
   })
 })

@@ -4,7 +4,7 @@ Vue 3 draggable/resizable component library (`vue3-draggable-resizable`), TypeSc
 
 ## Layout
 
-- `src/core/`: framework-agnostic logic (positioning, handles, reference lines, pointer). No Vue imports here.
+- `src/core/`: framework-agnostic logic (positioning, handles, guides, pointer). No Vue imports here.
 - `src/vue/`: Vue components (`components/`) and composables (`composables/`).
 - `src/index.ts`: public API. Keep exports in sync with `src/index.test-d.ts`.
 - `playground/`: local demo app (`pnpm dev-vue`).

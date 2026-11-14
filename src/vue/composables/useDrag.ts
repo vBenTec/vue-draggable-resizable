@@ -1,8 +1,8 @@
 import { onScopeDispose, type Ref, type ShallowRef } from 'vue'
 
+import { getMatchedGuides, snapToGuides } from '../../core/guides'
 import { isPrimaryPointer, trackPointer } from '../../core/pointer'
 import { calculateSizeLimits, constrainPosition, moveRect } from '../../core/positioning'
-import { getMatchedLines, snapToReferenceLines } from '../../core/reference-lines'
 import type { ConstraintOptions, Rect, Size } from '../../core/types'
 import type { ContainerContext, DraggableResizableEmit } from '../types'
 
@@ -40,7 +40,7 @@ export const useDrag = ({
 
     const startX = x.value
     const startY = y.value
-    const referenceLines = container?.getReferenceLines(id, parentSize.value) ?? null
+    const guides = container?.getGuides(id, parentSize.value) ?? null
 
     dragging.value = true
     emit('drag-start', { x: startX, y: startY })
@@ -59,17 +59,17 @@ export const useDrag = ({
 
         const moved = keepInBounds(moveRect(start, deltaX, deltaY, options))
         // Snapping must never push the element out of its bounds.
-        const next = referenceLines
+        const next = guides
           ? keepInBounds({
               ...start,
-              ...snapToReferenceLines(moved, referenceLines, {
+              ...snapToGuides(moved, guides, {
                 x: !options.disabledX,
                 y: !options.disabledY,
               }),
             })
           : moved
 
-        if (referenceLines) container?.setMatchedLines(getMatchedLines(next, referenceLines))
+        if (guides) container?.setMatchedGuides(getMatchedGuides(next, guides))
 
         x.value = next.x
         y.value = next.y
@@ -78,7 +78,7 @@ export const useDrag = ({
       onEnd: () => {
         stopTracking = null
         dragging.value = false
-        container?.setMatchedLines(null)
+        container?.setMatchedGuides(null)
         emit('drag-end', { x: x.value, y: y.value })
       },
     })
@@ -88,7 +88,7 @@ export const useDrag = ({
     if (!stopTracking) return
     stopTracking()
     stopTracking = null
-    container?.setMatchedLines(null)
+    container?.setMatchedGuides(null)
   })
 
   return { onPointerDown }

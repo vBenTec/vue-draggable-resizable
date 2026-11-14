@@ -6,43 +6,36 @@ import type { DraggableContainerProps } from '../types'
 
 const {
   disabled,
-  adsorbParent = true,
-  adsorbCols = [],
-  adsorbRows = [],
-  referenceLineVisible = true,
-  referenceLineColor,
+  snapToParent = true,
+  guidesX = [],
+  guidesY = [],
+  showGuides = true,
+  guideColor,
 } = defineProps<DraggableContainerProps>()
 
 defineSlots<{
   default?: () => unknown
 }>()
 
-const { matchedLines } = provideContainer(() => ({
-  disabled,
-  adsorbParent,
-  adsorbCols,
-  adsorbRows,
-}))
+const { matchedGuides } = provideContainer(() => ({ disabled, snapToParent, guidesX, guidesY }))
 
-const style = computed(() =>
-  referenceLineColor ? { '--vdr-reference-line-color': referenceLineColor } : undefined,
-)
+const style = computed(() => (guideColor ? { '--vdr-guide-color': guideColor } : undefined))
 </script>
 
 <template>
   <div class="vdr-snap-container" :style="style">
     <slot />
-    <template v-if="referenceLineVisible && matchedLines">
+    <template v-if="showGuides && matchedGuides">
       <div
-        v-for="value in matchedLines.col"
-        :key="`col-${value}`"
-        class="vdr-reference-line vdr-reference-line-col"
+        v-for="value in matchedGuides.x"
+        :key="`x-${value}`"
+        class="vdr-guide vdr-guide-x"
         :style="{ left: `${value}px` }"
       />
       <div
-        v-for="value in matchedLines.row"
-        :key="`row-${value}`"
-        class="vdr-reference-line vdr-reference-line-row"
+        v-for="value in matchedGuides.y"
+        :key="`y-${value}`"
+        class="vdr-guide vdr-guide-y"
         :style="{ top: `${value}px` }"
       />
     </template>
@@ -56,22 +49,24 @@ const style = computed(() =>
   height: 100%;
 }
 
-.vdr-reference-line {
+.vdr-guide {
   position: absolute;
   pointer-events: none;
 }
 
-.vdr-reference-line-col {
+/* Vertical line at an x coordinate. */
+.vdr-guide-x {
   top: 0;
   width: 0;
   height: 100%;
-  border-left: 1px dashed var(--vdr-reference-line-color, #f00);
+  border-left: 1px dashed var(--vdr-guide-color, #f00);
 }
 
-.vdr-reference-line-row {
+/* Horizontal line at a y coordinate. */
+.vdr-guide-y {
   left: 0;
   width: 100%;
   height: 0;
-  border-top: 1px dashed var(--vdr-reference-line-color, #f00);
+  border-top: 1px dashed var(--vdr-guide-color, #f00);
 }
 </style>
